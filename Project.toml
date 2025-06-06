@@ -1,0 +1,7 @@
+name = "FusionRings"
+uuid = "609e252f-52eb-439d-abe9-2fbe746db898"
+authors = ["Gert Vercleyen gert.vercleyen@protonmail.com"]
+version = "0.1.0"
+
+[deps]
+Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
