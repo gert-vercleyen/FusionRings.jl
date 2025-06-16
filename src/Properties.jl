@@ -9,7 +9,41 @@ function multiplication_table(r::FusionRing)::Array{Int,3}
   return r.multiplication_table
 end
 
+export print_multiplication_table
+
 function print_multiplication_table(r::FusionRing)
+  rk = rank(r)
+  mt = multiplication_table(r)
+
+  tab = fill( "", rk, rk )
+  for i in 1:rk, j in 1:rk
+    tab[i,j] = row_to_string(r,mt[i,j,:]) 
+  end
+  tab
+end
+
+export row_to_string
+
+function row_to_string(r::FusionRing, row)::String
+  n             = length(row)
+  el_names      = element_names(r)
+  non_zero_ind  = findall(i -> row[i] > 0, 1:n)
+  to_string(i)  = element_to_string(row[i], el_names[i])
+
+  join( 
+    map(to_string, non_zero_ind), 
+    " ⊕ "
+  )
+end
+
+function element_to_string(mult,elem)::String
+  if mult == 0 
+    return ""
+  elseif mult == 1
+    return elem
+  else 
+    return string(mult) * " " * elem 
+  end
 end
 
 pmt = print_multiplication_table
@@ -48,10 +82,10 @@ export is_commutative
 
 function is_commutative(r::FusionRing)::Bool
   mt = multiplication_table(r)
-  rank = rank(r)
+  rk = rank(r)
   all( 
     mat -> mat == mat', 
-    [ mt[:,:,i] for i in 1:rank ]
+    [ mt[:,:,i] for i in 1:rk ]
   )
 end
 
@@ -61,22 +95,34 @@ function multiplicity(r::FusionRing)::Int
   maximum(multiplication_table(r))
 end
 
-function nonzero_structure_constants(r::FusionRing)::Array{Int,2}
+export nonzero_structure_constants
 
+function nonzero_structure_constants(r::FusionRing)::Vector{Tuple{Int64, Int64, Int64}}
+  mt = multiplication_table(r)
+  map( Tuple, findall( x -> x > 0, mt ) ) 
 end
+
+export nzsc
 
 nzsc = nonzero_structure_constants
 
-function num_nonzero_structure_constants(r::FusionRing)::Array{Int,2}
-
+function num_nonzero_structure_constants(r::FusionRing)::Int64
+  length(nzsc(r))
 end
 
 nnzsc = num_nonzero_structure_constants
 
 export frobenius_perron_dimensions
 
-function frobenius_perron_dimensions(r::FusionRing)
-  r.frobenius_perron_dimensions
+function frobenius_perron_dimensions(r::FusionRing)::Vector{QQBarFieldElem}
+  stored_dims = r.frobenius_perron_dimensions 
+  if stored_dims===missing
+    mt = multiplication_table(r)
+    multmats = [ matrix( ZZ, mt[i,:,:] ) for i in 1:rank(r) ]
+    return [ first(eigenvalues(QQBar, A)) for A in multmats ]
+  else
+    return stored_dims
+  end
 end
 
 export fpdims 
@@ -85,7 +131,7 @@ fpdims = frobenius_perron_dimensions
 
 export frobenius_perron_dimension
 
-function frobenius_perron_dimension(r::FusionRing)
+function frobenius_perron_dimension(r::FusionRing)::QQBarFieldElem
   return sum( fpdims(r).^2 )
 end
 
@@ -93,30 +139,48 @@ export fpdim
 
 fpdim = frobenius_perron_dimension
 
-function num_self_dual_non_self_dual(r::FusionRing)::Array{Int,1}
+export num_self_dual_non_self_dual
 
+function num_self_dual_non_self_dual(r::FusionRing)::Array{Int,1}
+  sd  = count( x -> x == 1, diag( conjugation_matrix(r) ) )
+  nsd = rank(r) - sd
+  return [ sd nsd ]
 end
+
+export nsdnsd
 
 nsdnsd = num_self_dual_non_self_dual
 
+export num_self_dual
+
 function num_self_dual(r::FusionRing)::Int
-  
+  first( nsdnsd(r) )
 end
+
+export nsd
 
 nsd = num_self_dual
 
+export num_non_self_dual 
+
 function num_non_self_dual(r::FusionRing)::Int
-  
+  last( nsdnsd(r) )
 end
+
+export nnsd 
+
+nnsd = num_non_self_dual
 
 export is_group_ring
 
 function is_group_ring(r::FusionRing)::Bool
-  return sum(multiplication_table(r)) == rank(r)^2
+  return sum( multiplication_table(r) ) == rank(r)^2
 end
 
-function conjugate_element(r::FusionRing)
+export conjugate_element
 
+function conjugate_element(r::FusionRing)
+   return i -> ( conjugation_matrix(r) * collect( 1:rank(r) ) )[i]
 end
 
 export anyonwiki_code
@@ -136,8 +200,6 @@ end
 
 export sub_fusion_rings
 
-# TODO: This should also work for rings for which no information is 
-# known yet! 
 function sub_fusion_rings(r::FusionRing)
   return r.sub_fusion_rings
 end
