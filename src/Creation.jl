@@ -67,7 +67,6 @@ end
 
 function check_mt_dims(mt)
   dims = size(mt)
-  dim1 = dims[1];
   length(dims) === 3 && is_constant_array(dims) 
 end
 
@@ -100,6 +99,7 @@ function check_element_names(mt,names)
   rank = size(mt)[1]
   length(names) == rank
 end
+
 
 # Generators of special fusion rings 
 
