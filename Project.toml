@@ -4,4 +4,13 @@ authors = ["Gert Vercleyen gert.vercleyen@protonmail.com"]
 version = "0.1.0"
 
 [deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+TensorCategories = "258c694e-7338-4d4d-b524-4851272a75cf"
+
+[compat]
+LinearAlgebra = "1.11.0"
+Oscar = "1.4.1"
+Revise = "3.8.0"
+TensorCategories = "0.4.1"
