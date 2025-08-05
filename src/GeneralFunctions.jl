@@ -6,7 +6,7 @@
 
 function transform_integer( i::Int, dict::Dict ) 
   dgts = digits( i, base = 10 )
-  join( [ dict[j] for j in dgts  ] )
+  join( reverse( [ dict[j] for j in dgts  ] ) )
 end
 
 bold_integer(i::Int)::String = transform_integer(i, bold_digits_dict)
