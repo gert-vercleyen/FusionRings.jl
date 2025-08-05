@@ -40,3 +40,8 @@ function is_constant_array( arr )
   first = arr[1]
   return all( element === first for element in arr )
 end
+
+# comap applies each function in an array to a single argument
+function comap( arr, arg )
+  [ f(arg) for f in arr ]
+end
