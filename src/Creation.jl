@@ -48,11 +48,11 @@ function fusion_ring(mt; names = missing, texnames = missing, element_names = mi
                      frobenius_perron_dimensions = missing, modular_data = missing,
                      characters = missing)
 
-    check_struct_const(mt)      || error("All structure constants must be non‑negative integers")
-    check_mt_dims(mt)           || error("multiplication_table must be a 3‑tensor with equal side lengths")
-    check_unit(mt)              || error("First basis element must act as unit object")
-    check_inverse(mt)           || error("Each simple object must have a unique inverse")
-    check_associativity(mt)     || error("Structure constants violate associativity")
+    check_struct_const(mt)     || error("All structure constants must be non‑negative integers")
+    check_mt_dims(mt)          || error("multiplication_table must be a 3‑tensor with equal side lengths")
+    check_unit(mt)             || error("First basis element must act as unit object")
+    check_inverse(mt)          || error("Each simple object must have a unique inverse")
+    check_associativity(mt)    || error("Structure constants violate associativity")
     (element_names === missing || check_element_names(mt, element_names)) ||
         error("element_names length ≠ rank")
 
