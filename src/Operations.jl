@@ -5,6 +5,8 @@ using LinearAlgebra: kron
 using Combinatorics          # for permutation generation (≤ 8 elements)
 using ..FusionRings          
 
+include("Creation.jl")
+
 """permute_mult_tab(mt, perm) – return a copy of the 3‑tensor `mt` with indices
     relabelled by `perm`."""
 function permute_mult_tab(mt::Array{Int,3}, perm::Vector{Int})

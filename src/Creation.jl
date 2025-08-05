@@ -1,8 +1,6 @@
-
-
 include("GeneralFunctions.jl")
-using LinearAlgebra   # for `I`
 
+using LinearAlgebra   # for `I`
 
 struct FusionRing
     multiplication_table
@@ -19,9 +17,6 @@ struct FusionRing
 end
 
 export fusion_ring
-
-
-is_constant_array(dims) = length(unique(dims)) == 1
 
 check_struct_const(mt) = all(x -> x >= 0, mt)
 
