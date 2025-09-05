@@ -64,12 +64,27 @@ function fusion_ring(mt; names = missing, texnames = missing, element_names = mi
         modular_data, characters)
 end
 
+# Formatting of fusion rings 
+function Base.show( io::IO, ring::FusionRing ) 
+    p(str) = print( io, str );
+    if !ismissing(ring.names)
+        p( "FR(" * names(ring)[1] * ")" )
+    elseif !ismissing(ring.formal_code)
+        p( "FR(" * formal_code(ring)[2:end-1] * ")" )
+    else
+        props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
+        p( "FR(" * join( props, ", "  ) * ")" )
+    end
+end
+
 export psu2k_fusion_ring, su2k_fusion_ring, son2_fusion_ring, metaplectic_fusion_ring,
        fusion_ring_from_group, zn_fusion_ring, group_rep_fusion_ring, hi_fusion_ring,
        ty_fusion_ring
 
 range_psu2k(i, j, k) = abs(i - j):2:min(i + j, 2k - i - j)
 
+# TODO: add missing information
+# TODO: code for element_names is a bit too dense
 # PSU(2)_k
 function psu2k_fusion_ring(k::Int)::FusionRing
     rk = div(k, 2) + 1
@@ -84,6 +99,7 @@ function psu2k_fusion_ring(k::Int)::FusionRing
                                  for i in 1:rk])
 end
 
+# TODO: add missing information
 # SU(2)_k
 function su2k_fusion_ring(k::Int)::FusionRing
     rk = k + 1
@@ -95,6 +111,7 @@ function su2k_fusion_ring(k::Int)::FusionRing
 end
 
 
+# TODO: add missing information
 function zn_fusion_ring(n::Int)::FusionRing
     mt = fill(0, n, n, n)
     for i in 0:n-1, j in 0:n-1
@@ -119,6 +136,7 @@ function is_cayley_table(gmt::Array{Int, 2})
     true
 end
 
+# TODO: add missing information
 function fusion_ring_from_group(gmt::Array{Int, 2}; skipcheck::Bool = false)::FusionRing
     !skipcheck && is_cayley_table(gmt) || error("Provided table is not a valid Cayley table")
     r = size(gmt, 1)
@@ -129,13 +147,13 @@ function fusion_ring_from_group(gmt::Array{Int, 2}; skipcheck::Bool = false)::Fu
     fusion_ring(mt)
 end
 
-# Overload for actual group objects (needs character data)
+# TODO: Overload for actual group objects (needs character data)
 function fusion_ring_from_group(grp)
     throw(ErrorException("fusion_ring_from_group(grp) not yet implemented — require group algebra / character data"))
 end
 
+# TODO: add missing information
 # Tambara–Yamagami rings
-
 function ty_fusion_ring(G::AbstractVector)::FusionRing
     n = length(G)
     rank = n + 1
@@ -157,12 +175,14 @@ function ty_fusion_ring(G::AbstractVector)::FusionRing
                 element_names = vcat(string.(G), ["m"]))
 end
 
-#to do:
+# TODO: implement 
 son2_fusion_ring(n::Int) = throw(ErrorException("son2_fusion_ring requires SO(n)_2 fusion rules (TODO)"))
+# TODO: implement 
 metaplectic_fusion_ring(m::Int) = throw(ErrorException("metaplectic_fusion_ring not yet implemented"))
 
+# TODO: implement 
 group_rep_fusion_ring(grp) = throw(ErrorException("group_rep_fusion_ring needs character tables (TODO)"))
+# TODO: implement 
 hi_fusion_ring(grp)       = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
 
 groupname(grp) = try string(grp) catch; "Unknown Group" end
-
