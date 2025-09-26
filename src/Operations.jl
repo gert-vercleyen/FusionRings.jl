@@ -2,14 +2,14 @@
 module Operations
 
 using ..Types: FusionRing, fusion_tensor, labels, rank
-using LinearAlgebra
+using LinearAlgebra: eigvals
 using Combinatorics: permutations
 
 export fusion_matrix, fusion_coeff, tensor_product, decompose, decompose_all
 export tensor_table, product_string, print_tensor_table
 export permute_mult_tab, permute, is_equivalent
 
-labelstr(s::Symbol) = String(s)
+labelstr(s) = String(s)
 
 function _indexmap(fr::FusionRing)
     Dict(l=>i for (i,l) in enumerate(labels(fr)))
@@ -17,38 +17,42 @@ end
 
 function fusion_matrix(fr::FusionRing, a)::Array{Int,2}
     A = fusion_tensor(fr)
-    idx = a isa Integer ? a : _indexmap(fr)[a]
+    amap = _indexmap(fr)
+    if a isa Integer
+        idx = a
+    elseif a isa Symbol
+        idx = amap[String(a)]
+    else
+        idx = amap[String(a)]
+    end
     @views A[idx, :, :]
 end
 
 function fusion_coeff(fr::FusionRing, a, b, c)::Int
     imap = _indexmap(fr)
-    ai = a isa Integer ? a : imap[a]
-    bi = b isa Integer ? b : imap[b]
-    ci = c isa Integer ? c : imap[c]
+    normalize(x) = x isa Integer ? x : (x isa Symbol ? imap[String(x)] : imap[String(x)])
+    ai = normalize(a); bi = normalize(b); ci = normalize(c)
     fusion_tensor(fr)[ai,bi,ci]
 end
 
 function tensor_product(fr::FusionRing, a, b)
     imap = _indexmap(fr)
-    ai = a isa Integer ? a : imap[a]
-    bi = b isa Integer ? b : imap[b]
+    normalize(x) = x isa Integer ? x : (x isa Symbol ? imap[String(x)] : imap[String(x)])
+    ai = normalize(a); bi = normalize(b)
     N = fusion_tensor(fr)[ai,bi,:]
-    out = Dict{Symbol,Int}()
+    out = Dict{String,Int}()
+    L = labels(fr)
     for (ci,m) in enumerate(N)
         m==0 && continue
-        out[labels(fr)[ci]] = m
+        out[L[ci]] = m
     end
     out
 end
 
-function decompose(fr::FusionRing, a, b)
-    d = tensor_product(fr,a,b)
-    [ (k,v) for (k,v) in d ]
-end
+decompose(fr::FusionRing, a, b) = [ (k,v) for (k,v) in tensor_product(fr,a,b) ]
 
 function decompose_all(fr::FusionRing, a)
-    out = Dict{Symbol, Vector{Tuple{Symbol,Int}}}()
+    out = Dict{String, Vector{Tuple{String,Int}}}()
     for b in labels(fr)
         out[b] = decompose(fr, a, b)
     end
@@ -57,7 +61,7 @@ end
 
 function tensor_table(fr::FusionRing; include_zeros::Bool=false)
     L = labels(fr); r = length(L)
-    cell(a::Symbol, b::Symbol) = begin
+    cell(a::String, b::String) = begin
         d = tensor_product(fr, a, b)
         if include_zeros
             parts = String[]
@@ -98,9 +102,10 @@ end
 
 function product_string(fr::FusionRing, a, b)
     L = labels(fr)
-    aS = a isa Symbol ? a : L[a]
-    bS = b isa Symbol ? b : L[b]
-    rhs = tensor_table(fr)[_indexmap(fr)[aS], _indexmap(fr)[bS]]
+    amap = _indexmap(fr)
+    norm(x) = x isa Integer ? L[x] : (x isa Symbol ? String(x) : String(x))
+    aS = norm(a); bS = norm(b)
+    rhs = tensor_table(fr)[amap[aS], amap[bS]]
     string(labelstr(aS), " ⊗ ", labelstr(bS), " = ", rhs)
 end
 

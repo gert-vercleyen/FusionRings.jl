@@ -8,10 +8,10 @@ export fibonacci_ring, ising_ring, semion_ring
 export su2_fusion_ring, psu2_fusion_ring, zn_fusion_ring
 export ty_fusion_ring, near_group_ring
 
-_sym(x) = x isa Symbol ? x : Symbol(x)
+_str(x) = x isa Symbol ? String(x) : String(x)
 
 function fibonacci_ring()
-    labels = Symbol["1", :τ]
+    labels = String["1", "τ"]
     N1 = [1 0; 0 1]
     Nτ = [0 1; 1 1]
     N = Array{Int,3}(undef, 2,2,2)
@@ -21,7 +21,7 @@ function fibonacci_ring()
 end
 
 function ising_ring()
-    labels = Symbol["1", :σ, :ψ]
+    labels = String["1", "σ", "ψ"]
     N1 = [1 0 0; 0 1 0; 0 0 1]
     Nσ = [0 1 0; 1 0 1; 0 1 0]
     Nψ = [0 0 1; 0 1 0; 1 0 0]
@@ -33,7 +33,7 @@ function ising_ring()
 end
 
 function semion_ring()
-    labels = Symbol["1", :s]
+    labels = String["1", "s"]
     N1 = [1 0; 0 1]
     Ns = [0 1; 1 0]
     N = Array{Int,3}(undef, 2,2,2)
@@ -44,7 +44,7 @@ end
 
 function su2_fusion_ring(k::Int)
     r = k+1
-    labs = Symbol.(string.(0:k))
+    labs = string.(0:k)
     N = fill(0, r,r,r)
     for a in 0:k, b in 0:k, c in 0:k
         if abs(a-b) ≤ c ≤ min(a+b, 2k - a - b) && ((a+b+c) % 2 == 0)
@@ -63,12 +63,12 @@ function psu2_fusion_ring(k::Int)
     for i in 1:r2, j in 1:r2, l in 1:r2
         N2[i,j,l] = fusion_tensor(su)[even[i], even[j], even[l]]
     end
-    labs = Symbol.(string.(0:r2-1))
+    labs = string.(0:r2-1)
     fusion_ring(N2; labels=labs, name="PSU(2)_$(k)")
 end
 
 function zn_fusion_ring(n::Int)
-    labs = Symbol.(string.(0:n-1))
+    labs = string.(0:n-1)
     N = fill(0, n,n,n)
     for i in 0:n-1, j in 0:n-1
         k = (i + j) % n
@@ -79,7 +79,7 @@ end
 
 function ty_fusion_ring(G::Vector{String})
     n = length(G); r = n+1
-    labs = Symbol.(vcat(G, ["m"]))
+    labs = vcat(G, ["m"])
     N = fill(0, r,r,r)
     for i in 1:n, j in 1:n
         k = ((i-1) + (j-1)) % n + 1
@@ -99,7 +99,7 @@ end
 function near_group_ring(G::Vector{String}; n::Int=1)
     n ≥ 0 || error("n must be ≥ 0")
     nG = length(G)
-    labs = Symbol.(vcat(G, ["X"]))
+    labs = vcat(G, ["X"])
     r = nG+1
     N = fill(0, r,r,r)
     for i in 1:nG, j in 1:nG

@@ -10,13 +10,24 @@ export song_extension_D3, enumerate_song_extensions_D3, demo_song_D3
 
 const D3 = ["1","r","r^2","s","sr","sr^2"]
 
-parse_d3(x::String)::Tuple{Int,Bool} = x=="1"   ? (0,false) :
-                                       x=="r"   ? (1,false) :
-                                       x=="r^2" ? (2,false) :
-                                       x=="s"   ? (0,true)  :
-                                       x=="sr"  ? (1,true)  :
-                                       x=="sr^2"? (2,true)  :
-                                       error("Unknown element $x")
+"""
+    parse_d3(x::String) -> (i::Int, flip::Bool)
+
+Robust parser for D3 elements. Replaces previous chained ternary expression
+to avoid parsing / style issues on some Julia versions and improve
+readability.
+"""
+function parse_d3(x::String)::Tuple{Int,Bool}
+    if x == "1";      return (0,false)
+    elseif x == "r";  return (1,false)
+    elseif x == "r^2";return (2,false)
+    elseif x == "s";  return (0,true)
+    elseif x == "sr"; return (1,true)
+    elseif x == "sr^2"; return (2,true)
+    else
+        error("Unknown element $x")
+    end
+end
 
 function unparse_d3(i::Int, flip::Bool)::String
     j = mod(i,3)
@@ -130,7 +141,7 @@ end
 function ringmul_to_fusionring(basis::Vector{String},
                                ringmul::Dict{Tuple{String,String},Dict{String,Int}};
                                name::String)
-    labels = Symbol.(basis)
+    labels = basis  # now Vector{String}
     r = length(labels)
     idx  = Dict{String,Int}(basis[i]=>i for i in 1:r)
     N = fill(0, r,r,r)
@@ -144,18 +155,20 @@ function ringmul_to_fusionring(basis::Vector{String},
     fusion_ring(N; labels=labels, name=name)
 end
 
-function song_extension_D3(H::Symbol; tildeg::String="s", n::Int=1, A::Symbol=:id)
-    Hset = H === :trivial   ? H_trivial   :
-           H === :rotations ? H_rotations :
-           H === :whole     ? H_whole     :
+function song_extension_D3(H; tildeg::String="s", n::Int=1, A=:id)
+    Hs = H isa Symbol ? H : Symbol(H)
+    As = A isa Symbol ? A : Symbol(A)
+    Hset = Hs === :trivial   ? H_trivial   :
+           Hs === :rotations ? H_rotations :
+           Hs === :whole     ? H_whole     :
            error("H must be :trivial, :rotations, or :whole")
     G = D3
     T = build_orbit_set(G,Hset)
     L = build_lift(T)
     reps = coset_reps(G,Hset)
     auts = automorphisms_on_factor(G,Hset)
-    Afunc = A === :id   ? auts[1] :
-            A === :swap ? auts[min(2,length(auts))] :
+    Afunc = As === :id   ? auts[1] :
+        As === :swap ? auts[min(2,length(auts))] :
             error("A must be :id or :swap")
     check_A2_equals_conjugation(Afunc, tildeg, Hset, reps) || @warn "A^2 != conj_{g̃} (continuing)"
     basis = vcat(G,T)
@@ -163,7 +176,7 @@ function song_extension_D3(H::Symbol; tildeg::String="s", n::Int=1, A::Symbol=:i
     for x in basis, y in basis
         ringmul[(x,y)] = song_product(x,y; G=G,H=Hset,T=T,tildeg=tildeg,n=n,lift=L,A=Afunc)
     end
-    nm = "SONG(D3; H=$(String(H)), g̃=$tildeg, n=$n, A=$(String(A)))"
+    nm = "SONG(D3; H=$(String(Hs)), g̃=$tildeg, n=$n, A=$(String(As)))"
     ringmul_to_fusionring(basis, ringmul; name=nm)
 end
 

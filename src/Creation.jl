@@ -31,13 +31,15 @@ function _associative(N::Array{Int,3})
     return true
 end
 
-function fusion_ring(N::Array{Int,3}; labels::Union{Nothing,Vector{Symbol}}=nothing, name::String="FusionRing")
+function fusion_ring(N::Array{Int,3}; labels::Union{Nothing,Vector{Symbol},Vector{String}}=nothing, name::String="FusionRing")
     !_nonnegints(N) && error("Structure constants must be nonnegative integers.")
     !_cubic3(N) && error("Tensor must be 3-dimensional and cubic.")
     !_unit_ok(N) && error("First simple must act as the tensor unit.")
     !_associative(N) && error("Tensor fails associativity.")
     if labels === nothing
-        labels = [Symbol(i==1 ? "1" : string(i-1)) for i in 1:size(N,1)]
+        labels = [i==1 ? "1" : string(i-1) for i in 1:size(N,1)]
+    elseif eltype(labels) <: Symbol
+        labels = String.(labels)
     end
     length(labels)==size(N,1) || error("labels length must equal rank.")
     return FusionRing(N, labels, name)

@@ -2,7 +2,7 @@
 module Properties
 
 using ..Types: FusionRing, fusion_tensor, labels, rank
-using LinearAlgebra
+using LinearAlgebra: eigen
 
 export quantum_dimensions, global_dimension, is_commutative, multiplicity
 export nonzero_structure_constants, conjugation_matrix, is_group_ring
@@ -49,7 +49,7 @@ end
 
 function conjugate_element(fr::FusionRing, a)
     imap = Dict(l=>i for (i,l) in enumerate(labels(fr)))
-    ai = a isa Integer ? a : imap[a]
+    ai = a isa Integer ? a : (a isa Symbol ? imap[String(a)] : imap[String(a)])
     C = conjugation_matrix(fr)
     hits = findall(==(1), C[ai, :])
     length(hits)==1 || error("Conjugate not unique for element $a")
@@ -68,7 +68,7 @@ end
 
 function sub_fusion_rings(fr::FusionRing)
     L = labels(fr); r = length(L)
-    sets = Vector{Vector{Symbol}}()
+    sets = Vector{Vector{String}}()
     for mask in 1:(1<<(r-1))-1
         subset = [L[1]]
         for i in 2:r
@@ -83,10 +83,12 @@ function sub_fusion_rings(fr::FusionRing)
     sets
 end
 
-function is_sub_fusion_ring(fr::FusionRing, S::Vector{Symbol})
-    Sset = Set(S)
+function is_sub_fusion_ring(fr::FusionRing, S::Vector)
+    # Accept Vector{String} preferred, but allow symbols via conversion
+    S2 = [s isa Symbol ? String(s) : String(s) for s in S]
+    Sset = Set(S2)
     all(l -> l in Sset, labels(fr)[1:1]) || return false
-    for a in S, b in S
+    for a in S2, b in S2
         imap = Dict(l=>i for (i,l) in enumerate(labels(fr)))
         ai = imap[a]; bi = imap[b]
         N = fusion_tensor(fr)[ai,bi,:]

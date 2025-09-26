@@ -5,9 +5,12 @@ export FusionRing, labels, rank, fusion_tensor, ringname
 
 Base.@kwdef struct FusionRing
     N::Array{Int,3}
-    labels::Vector{Symbol}
+    labels::Vector{String}
     name::String = "FusionRing"
 end
+
+# Backward compatibility accessor allowing Symbols in legacy code paths
+_sym2str(x) = x isa Symbol ? String(x) : String(x)
 
 labels(fr::FusionRing) = fr.labels
 rank(fr::FusionRing) = size(fr.N, 1)
