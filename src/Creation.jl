@@ -3,17 +3,20 @@ include("GeneralFunctions.jl")
 using LinearAlgebra   # for `I`
 
 struct FusionRing
-    multiplication_table
+    multiplication_table::Array{Int64,3}
     names
     texnames
     element_names::Vector{String}
     barcode
     formal_code
-    direct_product_decompositions
+    tensor_product_decompositions
     sub_fusion_rings
     frobenius_perron_dimensions
     modular_data
     characters
+    numeric_frobenius_perron_dimensions
+    numeric_modular_data
+    numeric_characters
 end
 
 export fusion_ring
@@ -42,14 +45,25 @@ end
 check_element_names(mt, names) = length(names) == size(mt, 1)
 
 
-function fusion_ring(mt; names = missing, texnames = missing, element_names = missing,
-                     barcode = missing, formal_code = missing,
-                     tensor_product_decompositions = missing, sub_fusion_rings = missing,
-                     frobenius_perron_dimensions = missing, modular_data = missing,
-                     characters = missing)
+function fusion_ring(
+    mt; 
+    names                               = missing, 
+    texnames                            = missing, 
+    element_names                       = missing,
+    barcode                             = missing, 
+    formal_code                         = missing,
+    tensor_product_decompositions       = missing, 
+    sub_fusion_rings                    = missing,
+    frobenius_perron_dimensions         = missing, 
+    modular_data                        = missing,
+    characters                          = missing, 
+    numeric_characters                  = missing,  
+    numeric_frobenius_perron_dimensions = missing,
+    numeric_modular_data                = missing
+    )
 
-    check_struct_const(mt)     || error("All structure constants must be non‑negative integers")
-    check_mt_dims(mt)          || error("multiplication_table must be a 3‑tensor with equal side lengths")
+    check_struct_const(mt)     || error("All structure constants must be non-negative integers")
+    check_mt_dims(mt)          || error("multiplication_table must be a 3-tensor with equal side lengths")
     check_unit(mt)             || error("First basis element must act as unit object")
     check_inverse(mt)          || error("Each simple object must have a unique inverse")
     check_associativity(mt)    || error("Structure constants violate associativity")
@@ -59,9 +73,21 @@ function fusion_ring(mt; names = missing, texnames = missing, element_names = mi
     element_names === missing && (element_names = [bold_integer(i) for i in 1:size(mt, 1)])
 
     FusionRing(
-        Int.(mt), names, texnames, element_names, barcode, formal_code,
-        tensor_product_decompositions, sub_fusion_rings, frobenius_perron_dimensions,
-        modular_data, characters)
+        Int.(mt), 
+        names, 
+        texnames, 
+        element_names, 
+        barcode, 
+        formal_code,
+        tensor_product_decompositions, 
+        sub_fusion_rings, 
+        frobenius_perron_dimensions,
+        modular_data, 
+        characters,
+        numeric_frobenius_perron_dimensions,
+        numeric_modular_data,
+        numeric_characters
+    )
 end
 
 # Formatting of fusion rings 
