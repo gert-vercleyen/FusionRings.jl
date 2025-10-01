@@ -121,11 +121,20 @@ function psu2k_fusion_ring(k::Int)::FusionRing
     for a in 0:2:k, b in 0:2:k, c in 0:2:k
         c in range_psu2k(a, b, k) && (mt[div(a, 2)+1, div(b, 2)+1, div(c, 2)+1] = 1)
     end
-    fusion_ring(mt,
-                names = ["PSU(2)" * subscript_integer(k)],
-                element_names = [denominator((i-1)//2) == 1 ? string((i-1)//2) :
-                                 string(numerator((i-1)//2))*"/"*string(denominator((i-1)//2))
-                                 for i in 1:rk])
+
+    elnames = 
+        [
+            denominator((i-1)//2) == 1 ? 
+            string((i-1)//2) :
+            string(numerator((i-1)//2))*"/"*string(denominator((i-1)//2))
+            for i in 1:rk
+        ]
+    
+    fusion_ring(
+        mt,
+        names = ["PSU(2)" * subscript_integer(k)],
+        element_names = elnames
+    )
 end
 
 # TODO: add missing information
@@ -136,7 +145,11 @@ function su2k_fusion_ring(k::Int)::FusionRing
     for a in 0:k, b in 0:k, c in 0:k
         c in range_psu2k(a, b, k) && (mt[a+1, b+1, c+1] = 1)
     end
-    fusion_ring(mt, names = ["SU(2)" * subscript_integer(k)])
+    fusion_ring(
+        mt, 
+        names = ["SU(2)" * subscript_integer(k)],
+        element_names = string.(0:k)
+    )
 end
 
 
@@ -147,9 +160,11 @@ function zn_fusion_ring(n::Int)::FusionRing
         k = mod(i + j, n)
         mt[i+1, j+1, k+1] = 1
     end
-    fusion_ring(mt,
-                names = ["Z_" * string(n)],
-                element_names = string.(0:n-1))
+    fusion_ring(
+        mt,
+        names = ["Z_" * string(n)],
+        element_names = string.(0:n-1)
+    )
 end
 
 # fusion‑ring creation from a group multiplication table
@@ -199,9 +214,11 @@ function ty_fusion_ring(G::AbstractVector)::FusionRing
     for i in 1:n
         mt[m, m, i] = 1
     end
-    fusion_ring(mt,
-                names = ["TY(" * join(G, ",") * ")"],
-                element_names = vcat(string.(G), ["m"]))
+    fusion_ring(
+        mt,
+        names = ["TY(" * join(G, ",") * ")"],
+        element_names = vcat(string.(G), ["m"])
+    )
 end
 
 # TODO: implement 
