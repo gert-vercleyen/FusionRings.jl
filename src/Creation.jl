@@ -59,16 +59,19 @@ function fusion_ring(
     characters                          = missing, 
     numeric_characters                  = missing,  
     numeric_frobenius_perron_dimensions = missing,
-    numeric_modular_data                = missing
+    numeric_modular_data                = missing,
+    skip_check                          = false,
     )
 
-    check_struct_const(mt)     || error("All structure constants must be non-negative integers")
-    check_mt_dims(mt)          || error("multiplication_table must be a 3-tensor with equal side lengths")
-    check_unit(mt)             || error("First basis element must act as unit object")
-    check_inverse(mt)          || error("Each simple object must have a unique inverse")
-    check_associativity(mt)    || error("Structure constants violate associativity")
-    (element_names === missing || check_element_names(mt, element_names)) ||
-        error("element_names length ≠ rank")
+    if !skip_check
+        check_struct_const(mt)     || error("All structure constants must be non-negative integers")
+        check_mt_dims(mt)          || error("multiplication_table must be a 3-tensor with equal side lengths")
+        check_unit(mt)             || error("First basis element must act as unit object")
+        check_inverse(mt)          || error("Each simple object must have a unique inverse")
+        check_associativity(mt)    || error("Structure constants violate associativity")
+        (element_names === missing || check_element_names(mt, element_names)) ||
+            error("element_names length ≠ rank")
+    end
 
     element_names === missing && (element_names = [bold_integer(i) for i in 1:size(mt, 1)])
 
@@ -96,7 +99,7 @@ function Base.show( io::IO, ring::FusionRing )
     if !ismissing(ring.names)
         p( "FR(" * names(ring)[1] * ")" )
     elseif !ismissing(ring.formal_code)
-        p( "FR(" * formal_code(ring)[2:end-1] * ")" )
+        p( "FR(" * string(anyonwiki_code(ring))[2:end-1] * ")" )
     else
         props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
         p( "FR(" * join( props, ", "  ) * ")" )
