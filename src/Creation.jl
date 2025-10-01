@@ -21,7 +21,7 @@ end
 
 export fusion_ring
 
-check_struct_const(mt) = all(x -> x >= 0, mt)
+check_struct_const(mt) = all(x -> x isa Integer && x >= 0, mt)
 
 function check_mt_dims(mt)
     dims = size(mt)
