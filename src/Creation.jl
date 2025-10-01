@@ -188,7 +188,7 @@ function fusion_ring_from_group(gmt::Array{Int, 2}; skipcheck::Bool = false)::Fu
     for i in 1:r, j in 1:r
         mt[i, j, gmt[i, j]] = 1
     end
-    fusion_ring(mt)
+    fusion_ring(mt, skip_check = skipcheck)
 end
 
 # TODO: Overload for actual group objects (needs character data)
