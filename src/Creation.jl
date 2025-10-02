@@ -3,22 +3,25 @@ include("GeneralFunctions.jl")
 using LinearAlgebra   # for `I`
 
 struct FusionRing
-    multiplication_table
+    multiplication_table::Array{Int64,3}
     names
     texnames
     element_names::Vector{String}
     barcode
     formal_code
-    direct_product_decompositions
+    tensor_product_decompositions
     sub_fusion_rings
     frobenius_perron_dimensions
     modular_data
     characters
+    numeric_frobenius_perron_dimensions
+    numeric_modular_data
+    numeric_characters
 end
 
 export fusion_ring
 
-check_struct_const(mt) = all(x -> x >= 0, mt)
+check_struct_const(mt) = all(x -> x isa Integer && x >= 0, mt)
 
 function check_mt_dims(mt)
     dims = size(mt)
@@ -42,26 +45,52 @@ end
 check_element_names(mt, names) = length(names) == size(mt, 1)
 
 
-function fusion_ring(mt; names = missing, texnames = missing, element_names = missing,
-                     barcode = missing, formal_code = missing,
-                     tensor_product_decompositions = missing, sub_fusion_rings = missing,
-                     frobenius_perron_dimensions = missing, modular_data = missing,
-                     characters = missing)
+function fusion_ring(
+    mt; 
+    names                               = missing, 
+    texnames                            = missing, 
+    element_names                       = missing,
+    barcode                             = missing, 
+    formal_code                         = missing,
+    tensor_product_decompositions       = missing, 
+    sub_fusion_rings                    = missing,
+    frobenius_perron_dimensions         = missing, 
+    modular_data                        = missing,
+    characters                          = missing, 
+    numeric_characters                  = missing,  
+    numeric_frobenius_perron_dimensions = missing,
+    numeric_modular_data                = missing,
+    skip_check                          = false,
+    )
 
-    check_struct_const(mt)     || error("All structure constants must be non‑negative integers")
-    check_mt_dims(mt)          || error("multiplication_table must be a 3‑tensor with equal side lengths")
-    check_unit(mt)             || error("First basis element must act as unit object")
-    check_inverse(mt)          || error("Each simple object must have a unique inverse")
-    check_associativity(mt)    || error("Structure constants violate associativity")
-    (element_names === missing || check_element_names(mt, element_names)) ||
-        error("element_names length ≠ rank")
+    if !skip_check
+        check_struct_const(mt)     || error("All structure constants must be non-negative integers")
+        check_mt_dims(mt)          || error("multiplication_table must be a 3-tensor with equal side lengths")
+        check_unit(mt)             || error("First basis element must act as unit object")
+        check_inverse(mt)          || error("Each simple object must have a unique inverse")
+        check_associativity(mt)    || error("Structure constants violate associativity")
+        (element_names === missing || check_element_names(mt, element_names)) ||
+            error("element_names length ≠ rank")
+    end
 
     element_names === missing && (element_names = [bold_integer(i) for i in 1:size(mt, 1)])
 
     FusionRing(
-        Int.(mt), names, texnames, element_names, barcode, formal_code,
-        tensor_product_decompositions, sub_fusion_rings, frobenius_perron_dimensions,
-        modular_data, characters)
+        Int.(mt), 
+        names, 
+        texnames, 
+        element_names, 
+        barcode, 
+        formal_code,
+        tensor_product_decompositions, 
+        sub_fusion_rings, 
+        frobenius_perron_dimensions,
+        modular_data, 
+        characters,
+        numeric_frobenius_perron_dimensions,
+        numeric_modular_data,
+        numeric_characters
+    )
 end
 
 # Formatting of fusion rings 
@@ -70,7 +99,7 @@ function Base.show( io::IO, ring::FusionRing )
     if !ismissing(ring.names)
         p( "FR(" * names(ring)[1] * ")" )
     elseif !ismissing(ring.formal_code)
-        p( "FR(" * formal_code(ring)[2:end-1] * ")" )
+        p( "FR(" * string(anyonwiki_code(ring))[2:end-1] * ")" )
     else
         props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
         p( "FR(" * join( props, ", "  ) * ")" )
@@ -92,11 +121,20 @@ function psu2k_fusion_ring(k::Int)::FusionRing
     for a in 0:2:k, b in 0:2:k, c in 0:2:k
         c in range_psu2k(a, b, k) && (mt[div(a, 2)+1, div(b, 2)+1, div(c, 2)+1] = 1)
     end
-    fusion_ring(mt,
-                names = ["PSU(2)" * subscript_integer(k)],
-                element_names = [denominator((i-1)//2) == 1 ? string((i-1)//2) :
-                                 string(numerator((i-1)//2))*"/"*string(denominator((i-1)//2))
-                                 for i in 1:rk])
+
+    elnames = 
+        [
+            denominator((i-1)//2) == 1 ? 
+            string((i-1)//2) :
+            string(numerator((i-1)//2))*"/"*string(denominator((i-1)//2))
+            for i in 1:rk
+        ]
+    
+    fusion_ring(
+        mt,
+        names = ["PSU(2)" * subscript_integer(k)],
+        element_names = elnames
+    )
 end
 
 # TODO: add missing information
@@ -107,7 +145,11 @@ function su2k_fusion_ring(k::Int)::FusionRing
     for a in 0:k, b in 0:k, c in 0:k
         c in range_psu2k(a, b, k) && (mt[a+1, b+1, c+1] = 1)
     end
-    fusion_ring(mt, names = ["SU(2)" * subscript_integer(k)])
+    fusion_ring(
+        mt, 
+        names = ["SU(2)" * subscript_integer(k)],
+        element_names = string.(0:k)
+    )
 end
 
 
@@ -118,9 +160,11 @@ function zn_fusion_ring(n::Int)::FusionRing
         k = mod(i + j, n)
         mt[i+1, j+1, k+1] = 1
     end
-    fusion_ring(mt,
-                names = ["Z_" * string(n)],
-                element_names = string.(0:n-1))
+    fusion_ring(
+        mt,
+        names = ["Z_" * string(n)],
+        element_names = string.(0:n-1)
+    )
 end
 
 # fusion‑ring creation from a group multiplication table
@@ -144,7 +188,7 @@ function fusion_ring_from_group(gmt::Array{Int, 2}; skipcheck::Bool = false)::Fu
     for i in 1:r, j in 1:r
         mt[i, j, gmt[i, j]] = 1
     end
-    fusion_ring(mt)
+    fusion_ring(mt, skip_check = skipcheck)
 end
 
 # TODO: Overload for actual group objects (needs character data)
@@ -170,9 +214,11 @@ function ty_fusion_ring(G::AbstractVector)::FusionRing
     for i in 1:n
         mt[m, m, i] = 1
     end
-    fusion_ring(mt,
-                names = ["TY(" * join(G, ",") * ")"],
-                element_names = vcat(string.(G), ["m"]))
+    fusion_ring(
+        mt,
+        names = ["TY(" * join(G, ",") * ")"],
+        element_names = vcat(string.(G), ["m"])
+    )
 end
 
 # TODO: implement 
