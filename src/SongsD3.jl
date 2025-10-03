@@ -13,8 +13,7 @@ const D3 = ["1","r","r^2","s","sr","sr^2"]
 """
     parse_d3(x::String) -> (i::Int, flip::Bool)
 
-Robust parser for D3 elements. Replaces previous chained ternary expression
-to avoid parsing / style issues on some Julia versions and improve
+style issues on some Julia versions and improve
 readability.
 """
 function parse_d3(x::String)::Tuple{Int,Bool}
