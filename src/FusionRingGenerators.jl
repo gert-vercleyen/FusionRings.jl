@@ -1,7 +1,6 @@
 module FusionRingGenerators
 
-"""Deprecated module. Use `NamedFusionRings` instead. This stub re-exports all
-named ring constructors and will be removed in a future release."""
+"""Deprecated module. Use `NamedFusionRings` instead."""
 const _deprecated_warned = Ref(false)
 function __init__()
     if !_deprecated_warned[]
