@@ -76,7 +76,6 @@ function conjugate_label(fr::FusionRing, a)
 end
 
 function is_group_ring(fr::FusionRing)
-<<<<<<< HEAD
     sum( fusion_tensor(fr) ) == FusionRings.rank(r)^2
 =======
     all(isapprox.(fpdims(fr), 1.0; atol=1e-8)) || return false
@@ -86,7 +85,6 @@ function is_group_ring(fr::FusionRing)
         s == 1 || return false
     end
     true
->>>>>>> 297b9693 (Patch)
 end
 
 function sub_fusion_rings(fr::FusionRing)
