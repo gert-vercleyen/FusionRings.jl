@@ -31,6 +31,23 @@ function _associative(N::Array{Int,3})
     return true
 end
 
+"""
+        fusion_ring(N; labels=nothing, name="FusionRing") -> FusionRing
+
+Construct a `FusionRing` from a rank-`r` structure tensor `N[a,b,c]` with
+nonnegative integer entries. This function is the *sole* gatekeeper of the
+defining fusion ring axioms in this package. After construction we assume:
+
+    • Nonnegativity: all `N[a,b,c] ≥ 0`.
+    • Cubic tensor: `size(N) == (r,r,r)`.
+    • Unit: index `1` labels the tensor unit so `N[1,a,b] = N[a,1,b] = δ_{a,b}`.
+    • Associativity: Σ_e N[a,b,e] N[e,c,d] == Σ_e N[a,e,d] N[b,c,e].
+    • Labels vector length equals rank and label 1 is the unit.
+
+Downstream functions *do not re-validate* these invariants for performance;
+they trust that any `FusionRing` value was created here. Inputs may also be
+provided with labels as `Symbol`s; they are normalized to `String`.
+"""
 function fusion_ring(N::Array{Int,3}; labels::Union{Nothing,Vector{Symbol},Vector{String}}=nothing, name::String="FusionRing")
     !_nonnegints(N) && error("Structure constants must be nonnegative integers.")
     !_cubic3(N) && error("Tensor must be 3-dimensional and cubic.")

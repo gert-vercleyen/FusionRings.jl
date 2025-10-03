@@ -2,7 +2,7 @@
 module Registry
 
 using ..Types: FusionRing, fusion_tensor, labels, rank, ringname
-using ..Properties: quantum_dimensions, global_dimension, multiplicity, is_commutative
+using ..Properties: fpdims, fpdim, multiplicity, is_commutative
 using JSON3, Dates, UUIDs
 
 export save_ring_json, load_registry_json, query_registry_by_fpdims
@@ -18,9 +18,9 @@ function save_ring_json(fr::FusionRing; path::AbstractString=DEFAULT_REGISTRY_PA
         "name"          => ringname(fr),
         "rank"          => rank(fr),
         "labels"        => string.(labels(fr)),
-        "fpdims"        => quantum_dimensions(fr),
-        "fpdims_sorted" => sort(quantum_dimensions(fr)),
-        "global_dim"    => global_dimension(fr),
+    "fpdims"        => fpdims(fr),
+    "fpdims_sorted" => sort(fpdims(fr)),
+    "global_dim"    => fpdim(fr),
         "multiplicity"  => multiplicity(fr),
         "commutative"   => is_commutative(fr),
         "tensor"        => fusion_tensor(fr),

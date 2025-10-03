@@ -2,42 +2,33 @@
 module Operations
 
 using ..Types: FusionRing, fusion_tensor, labels, rank
+using ..GeneralFunctions: indexmap
 using LinearAlgebra: eigvals
 using Combinatorics: permutations
 
 export fusion_matrix, fusion_coeff, tensor_product, decompose, decompose_all
-export tensor_table, product_string, print_tensor_table
+export multiplication_table, product_string, print_multiplication_table
 export permute_mult_tab, permute, is_equivalent
 
 labelstr(s) = String(s)
 
-function _indexmap(fr::FusionRing)
-    Dict(l=>i for (i,l) in enumerate(labels(fr)))
-end
-
 function fusion_matrix(fr::FusionRing, a)::Array{Int,2}
     A = fusion_tensor(fr)
-    amap = _indexmap(fr)
-    if a isa Integer
-        idx = a
-    elseif a isa Symbol
-        idx = amap[String(a)]
-    else
-        idx = amap[String(a)]
-    end
+    amap = indexmap(fr)
+    idx = a isa Integer ? a : amap[String(a)]
     @views A[idx, :, :]
 end
 
 function fusion_coeff(fr::FusionRing, a, b, c)::Int
-    imap = _indexmap(fr)
-    normalize(x) = x isa Integer ? x : (x isa Symbol ? imap[String(x)] : imap[String(x)])
+    imap = indexmap(fr)
+    normalize(x) = x isa Integer ? x : imap[String(x)]
     ai = normalize(a); bi = normalize(b); ci = normalize(c)
     fusion_tensor(fr)[ai,bi,ci]
 end
 
 function tensor_product(fr::FusionRing, a, b)
-    imap = _indexmap(fr)
-    normalize(x) = x isa Integer ? x : (x isa Symbol ? imap[String(x)] : imap[String(x)])
+    imap = indexmap(fr)
+    normalize(x) = x isa Integer ? x : imap[String(x)]
     ai = normalize(a); bi = normalize(b)
     N = fusion_tensor(fr)[ai,bi,:]
     out = Dict{String,Int}()
@@ -59,7 +50,7 @@ function decompose_all(fr::FusionRing, a)
     out
 end
 
-function tensor_table(fr::FusionRing; include_zeros::Bool=false)
+function multiplication_table(fr::FusionRing; include_zeros::Bool=false)
     L = labels(fr); r = length(L)
     cell(a::String, b::String) = begin
         d = tensor_product(fr, a, b)
@@ -88,12 +79,12 @@ function tensor_table(fr::FusionRing; include_zeros::Bool=false)
     T
 end
 
-function print_tensor_table(fr::FusionRing; include_zeros::Bool=false)
+function print_multiplication_table(fr::FusionRing; include_zeros::Bool=false)
     L = labels(fr); r = length(L)
     head = "⊗ │ " * join(labelstr.(L), " │ ")
     sep  = "──┼" * "───┼"^(r-1) * "──"
     println(head); println(sep)
-    T = tensor_table(fr; include_zeros)
+    T = multiplication_table(fr; include_zeros)
     for i in 1:r
         println(labelstr(L[i]), " │ ", join(T[i,:], " │ "))
     end
@@ -102,10 +93,10 @@ end
 
 function product_string(fr::FusionRing, a, b)
     L = labels(fr)
-    amap = _indexmap(fr)
-    norm(x) = x isa Integer ? L[x] : (x isa Symbol ? String(x) : String(x))
+    amap = indexmap(fr)
+    norm(x) = x isa Integer ? L[x] : String(x)
     aS = norm(a); bS = norm(b)
-    rhs = tensor_table(fr)[amap[aS], amap[bS]]
+    rhs = multiplication_table(fr)[amap[aS], amap[bS]]
     string(labelstr(aS), " ⊗ ", labelstr(bS), " = ", rhs)
 end
 

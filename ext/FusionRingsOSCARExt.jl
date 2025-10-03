@@ -1,14 +1,14 @@
 
 module FusionRingsOSCARExt
 
-using ..FusionRings
+using FusionRings
 using Oscar
 const GAP = Oscar.GAP
 
-import ..FusionRings: fusion_ring
-export fusion_ring_from_group_oscar, character_table_ring, song_extension_ring
+import FusionRings: fusion_ring
+export group_fusion_ring, character_table_ring, song_extension_ring
 
-function fusion_ring_from_group_oscar(G)
+function group_fusion_ring(G)
     elts = GAP.Globals.Elements(G)
     n = GAP.Globals.Length(elts)
     labstr = [String(GAP.gap_to_julia_string(GAP.Globals.String(e))) for e in elts]
@@ -19,7 +19,7 @@ function fusion_ring_from_group_oscar(G)
         k = idx[prod]
         N[i,j,k] = 1
     end
-    fusion_ring(N; labels=Symbol.(labstr), name=string("GroupRing(", GAP.Globals.String(G), ")"))
+    fusion_ring(N; labels=labstr, name=string("GroupRing(", GAP.Globals.String(G), ")"))
 end
 
 function character_table_ring(G)
@@ -34,7 +34,7 @@ function character_table_ring(G)
             N[i,j,k] = Int(mult)
         end
     end
-    labs = Symbol.("χ"*string.(1:m))
+    labs = ["χ"*string(i) for i in 1:m]
     fusion_ring(N; labels=labs, name="RepRing("*String(GAP.Globals.String(G))*")")
 end
 
@@ -43,7 +43,7 @@ function song_extension_ring(G; n::Int=1)
     elts = GAP.Globals.Elements(G)
     nG = GAP.Globals.Length(elts)
     labs = [String(GAP.gap_to_julia_string(GAP.Globals.String(e))) for e in elts]
-    labs = Symbol.(vcat(labs, ["X"]))
+    labs = vcat(labs, ["X"])
     r = nG + 1
     N = fill(0, r,r,r)
     idx = Dict{Any,Int}(elts[i]=>i for i in 1:nG)

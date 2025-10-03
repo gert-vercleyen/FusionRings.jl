@@ -1,7 +1,7 @@
 
 module FusionRingsBSONExt
 
-using ..FusionRings
+using FusionRings
 using BSON
 
 function FusionRings.DataCache._bson_read(path::AbstractString)

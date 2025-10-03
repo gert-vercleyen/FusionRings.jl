@@ -3,7 +3,7 @@ module SongsD3
 
 using ..Types: FusionRing
 using ..Creation: fusion_ring
-using ..Operations: tensor_table, print_tensor_table
+using ..Operations: multiplication_table, print_multiplication_table
 using LinearAlgebra
 
 export song_extension_D3, enumerate_song_extensions_D3, demo_song_D3
