@@ -1,7 +1,6 @@
 # Changelog
 
 ## 0.5.0 - 2025-10-02
-### Breaking
 - `conjugate_element` now returns an `Int` (index) instead of a `String` label.
 
 ### Added
@@ -59,6 +58,3 @@
 - Removed uniqueness assertion in `conjugate_element` (trust constructor invariants).
 - Normalized extension (OSCAR) label generation to produce `String` labels directly.
 
-### Notes
-- This is a minor version bump because although inputs remain backward compatible, return types involving labels changed from `Symbol` to `String`.
-- If external code relied on `keys(dict)::Symbol` it should be updated to compare with strings or call `String(sym)`.
