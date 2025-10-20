@@ -118,7 +118,6 @@ Return a dictionary with experimental modular data:
 - `:T` → twists (see `fusion_ring_twists`)
 - `:dims` → Frobenius–Perron dimensions
 - `:rank` → rank
-These agree with true modular data on known modular examples; otherwise are best-effort diagnostics.
 """
 function modular_data(R::FusionRing)
     return Dict(
