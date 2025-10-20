@@ -141,3 +141,7 @@ function is_equivalent(fr1::FusionRing, fr2::FusionRing)
 end
 
 end
+
+
+# Back-compat alias for table of strings
+const tensor_table = multiplication_table

@@ -64,3 +64,8 @@ export song_extension_D3, enumerate_song_extensions_D3, demo_song_D3
 @deprecate near_group_ring near_group_fusion_ring
 
 end
+
+include("GroupTheory.jl")
+include("ModularData.jl")
+using .GroupTheory
+using .ModularData

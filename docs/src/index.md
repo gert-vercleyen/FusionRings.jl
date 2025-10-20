@@ -86,3 +86,12 @@ exts = enumerate_song_extensions_D3()
 id = save_ring_json(F; extra=Dict("source"=>"demo"))
 hits = query_registry_by_fpdims(fpdims(F))
 ```
+
+
+## Quick examples
+```julia
+using FusionRings
+F = fibonacci_ring()
+print_multiplication_table(F)
+save_ring_json(F)
+```
