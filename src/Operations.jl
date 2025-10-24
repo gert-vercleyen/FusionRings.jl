@@ -144,4 +144,4 @@ end
 
 
 # Back-compat alias for table of strings
-const tensor_table = multiplication_table
+# const tensor_table = multiplication_table

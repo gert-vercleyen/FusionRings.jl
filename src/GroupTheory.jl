@@ -98,7 +98,7 @@ function fusion_ring_automorphisms(R::FusionRing; method=:auto, maxrank_brutefor
 
     if method === :bruteforce || (method === :auto && r <= maxrank_bruteforce)
         # Brute force search: keep permutations p that satisfy N[p(i), p(j), p(k)] == N[i,j,k]
-        using Combinatorics
+        @eval using Combinatorics
         gens = Int[][]
         # quick generators: find all label swaps that preserve unit row/column
         unit = 1

@@ -8,6 +8,8 @@ include("PrettyPrint.jl")
 
 include("Creation.jl")
 include("Operations.jl")
+
+
 include("Properties.jl")
 
 include("NamedFusionRings.jl")
@@ -63,9 +65,11 @@ export song_extension_D3, enumerate_song_extensions_D3, demo_song_D3
 @deprecate global_dimension fpdim
 @deprecate near_group_ring near_group_fusion_ring
 
-end
 
 include("GroupTheory.jl")
 include("ModularData.jl")
 using .GroupTheory
 using .ModularData
+
+end
+

@@ -77,14 +77,6 @@ end
 
 function is_group_ring(fr::FusionRing)
     sum( fusion_tensor(fr) ) == FusionRings.rank(r)^2
-=======
-    all(isapprox.(fpdims(fr), 1.0; atol=1e-8)) || return false
-    N = fusion_tensor(fr); r = size(N,1)
-    for a in 1:r, b in 1:r
-        s = sum(N[a,b,:])
-        s == 1 || return false
-    end
-    true
 end
 
 function sub_fusion_rings(fr::FusionRing)
