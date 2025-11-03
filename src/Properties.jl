@@ -267,8 +267,53 @@ end
 
 export characters 
 
-function characters(r::FusionRing)
-  return r.characters
+# TODO: Should not be done for non-commutative rings!!!
+function characters(ring::FusionRing)
+  if !(ring.characters === missing)
+    return ring.characters
+  else
+    qqb  = algebraic_closure(QQ) 
+    mt   = FusionRings.multiplication_table( ring )
+    r    = FusionRings.rank(ring)
+    mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
+
+    function is_character_table( mat, mats )
+      all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+    end
+    
+    charsq = false
+    upi = 9
+    upj = 9
+    
+    proposedchars = mats[1]
+    while !charsq
+      upi += 1
+      upj += 1
+      # Take random linear rational combination of fusion mats
+      rvec 		= rand( [ i//j for i ∈ 1:upi, j ∈ 1:upj ], r )
+      combinedmat = rvec[1] * mats[1]
+      for i ∈ 2:r
+        combinedmat += rvec[i] * mats[i]
+      end
+
+      # Find diagonalizing matrix
+      proposedchars = generalized_jordan_form( combinedmat )[2]
+      charsq = is_character_table( proposedchars, mats )
+    end
+    proposedchars
+  end 
+end
+
+function is_character_table( mat, mats )
+  all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+end
+
+function is_character_table( mat, ring )
+	mt   = FusionRings.multiplication_table( ring )
+	r    = FusionRings.rank(ring)
+	mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
+
+  all( is_diagonal( mat * m * inv(mat) ) for m in mats )
 end
 
 export modular_data
