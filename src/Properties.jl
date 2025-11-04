@@ -271,6 +271,8 @@ export characters
 function characters(ring::FusionRing)
   if !(ring.characters === missing)
     return ring.characters
+  elseif !FusionRings.is_commutative(ring) 
+    error("Calculation of characters for non-commutative fusion ring is not implemented yet.")
   else
     qqb  = algebraic_closure(QQ) 
     mt   = FusionRings.multiplication_table( ring )
