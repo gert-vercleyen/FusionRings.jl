@@ -1,7 +1,5 @@
 include("GeneralFunctions.jl")
 
-using LinearAlgebra   # for `I`
-
 struct FusionRing
     multiplication_table::Array{Int64,3}
     names
@@ -28,7 +26,17 @@ function check_mt_dims(mt)
     length(dims) == 3 && is_constant_array(dims)
 end
 
-check_unit(mt) = mt[1, :, :] == mt[:, 1, :] == I
+function check_unit(mt)
+    r = size(mt)[1]
+    δ(i,j) = i == j ? 1 : 0
+    for i in 1:r, j in 1:r
+        if !(mt[1, i, j] == mt[i, 1, j] == δ(i,j))
+            return false
+        end
+        continue
+    end
+    return true
+end
 
 check_inverse(mt) = sum(mt[:, :, 1]) == size(mt, 1)
 

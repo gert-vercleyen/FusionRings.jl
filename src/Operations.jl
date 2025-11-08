@@ -1,7 +1,6 @@
 
 module Operations
 
-using LinearAlgebra: kron
 using Combinatorics          # for permutation generation (≤ 8 elements)
 using ..FusionRings          
 
