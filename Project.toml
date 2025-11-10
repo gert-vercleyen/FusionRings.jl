@@ -1,14 +1,30 @@
 name = "FusionRings"
-uuid = "609e252f-52eb-439d-abe9-2fbe746db898"
-authors = ["Gert Vercleyen gert.vercleyen@protonmail.com"]
-version = "0.1.0"
+uuid = "2d8f65af-6f64-4f8e-9a4a-6a8c0dfc3f5b"
+version = "0.5.0"
 
 [deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[weakdeps]
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+
+[extensions]
+FusionRingsOSCARExt = "Oscar"
+FusionRingsBSONExt = "BSON"
 
 [compat]
-Combinatorics = "1.0.3"
-Oscar = "1.4.1"
-Revise = "3.8.0"
+julia = "1.9, 1.10, 1.11"
+JSON3 = "1"
+Combinatorics = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

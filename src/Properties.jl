@@ -1,337 +1,154 @@
 
-function change_fusion_ring_property(r::FusionRing, dict)::FusionRing
-
-end
-
-export multiplication_table
-
-function multiplication_table(r::FusionRing)::Array{Int,3}
-  return r.multiplication_table
-end
-
-export print_multiplication_table
-
-function print_multiplication_table(r::FusionRing)
-  rk = rank(r)
-  mt = multiplication_table(r)
-
-  tab = fill( "", rk, rk )
-  for i in 1:rk, j in 1:rk
-    tab[i,j] = row_to_string(r,mt[i,j,:]) 
-  end
-  tab
-end
-
-export row_to_string
-
-function row_to_string(r::FusionRing, row)::String
-  n             = length(row)
-  el_names      = element_names(r)
-  non_zero_ind  = findall(i -> row[i] > 0, 1:n)
-  to_string(i)  = element_to_string(row[i], el_names[i])
-
-  join( 
-    map(to_string, non_zero_ind), 
-    " ⊕ "
-  )
-end
-
-function element_to_string(mult,elem)::String
-  if mult == 0 
-    return ""
-  elseif mult == 1
-    return elem
-  else 
-    return string(mult) * " " * elem 
-  end
-end
-
-pmt = print_multiplication_table
-
-export rank
-
-function rank(r::FusionRing)::Int
-  size(multiplication_table(r))[1]
-end
-
-export names 
-
-function names(r::FusionRing)::Array{String,1}
-  return r.names
-end
-
-export tex_names
-
-function tex_names(r::FusionRing)::Array{String,1}
-  return r.texnames
-end
-
-export element_names
-
-function element_names(r::FusionRing)::Array{String,1}
-  return r.element_names
-end
-
-export conjugation_matrix
-
-function conjugation_matrix(r::FusionRing)::Array{Int,2}
-  return multiplication_table(r)[:,:,1]
-end
-
-export is_commutative
-
-function is_commutative(r::FusionRing)::Bool
-  mt = multiplication_table(r)
-  rk = rank(r)
-  all( 
-    mat -> mat == mat', 
-    [ mt[:,:,i] for i in 1:rk ]
-  )
-end
-
-export multiplicity
-
-function multiplicity(r::FusionRing)::Int
-  maximum(multiplication_table(r))
-end
-
-export nonzero_structure_constants
-
-function nonzero_structure_constants(r::FusionRing)::Vector{Tuple{Int64, Int64, Int64}}
-  mt = multiplication_table(r)
-  map( Tuple, findall( x -> x > 0, mt ) ) 
-end
-
-export nzsc
-
-nzsc = nonzero_structure_constants
-
-function num_nonzero_structure_constants(r::FusionRing)::Int64
-  length(nzsc(r))
-end
-
-nnzsc = num_nonzero_structure_constants
-
-export frobenius_perron_dimensions
-
-function frobenius_perron_dimensions(r::FusionRing)::Vector{QQBarFieldElem}
-  stored_dims = r.frobenius_perron_dimensions 
-  if stored_dims===missing
-    mt = multiplication_table(r)
-    multmats = [ matrix( ZZ, mt[i,:,:] ) for i in 1:rank(r) ]
-    return [ first(eigenvalues(QQBar, A)) for A in multmats ]
-  else
-    return stored_dims
-  end
-end
-
-export fpdims 
-
-fpdims = frobenius_perron_dimensions
-
-export frobenius_perron_dimension
-
-function frobenius_perron_dimension(r::FusionRing)::QQBarFieldElem
-  return sum( fpdims(r).^2 )
-end
-
-export fpdim
-
-fpdim = frobenius_perron_dimension
-
-export num_self_dual_non_self_dual
-
-function num_self_dual_non_self_dual(r::FusionRing)::Array{Int,1}
-  sd  = count( x -> x == 1, diag( conjugation_matrix(r) ) )
-  nsd = rank(r) - sd
-  return [ sd nsd ]
-end
-
-export nsdnsd
-
-nsdnsd = num_self_dual_non_self_dual
-
-export num_self_dual
-
-function num_self_dual(r::FusionRing)::Int
-  first( nsdnsd(r) )
-end
-
-export nsd
-
-nsd = num_self_dual
-
-export num_non_self_dual 
-
-function num_non_self_dual(r::FusionRing)::Int
-  last( nsdnsd(r) )
-end
-
-export nnsd 
-
-nnsd = num_non_self_dual
-
-export is_group_ring
-
-function is_group_ring(r::FusionRing)::Bool
-  return sum( multiplication_table(r) ) == rank(r)^2
-end
-
-export conjugate_element
-
-function conjugate_element(r::FusionRing)
-   return i -> ( conjugation_matrix(r) * collect( 1:rank(r) ) )[i]
-end
-
-export anyonwiki_code
-
-function anyonwiki_code(r::FusionRing)::Array{Int,1}
-  return r.formal_code
-end
-
-export barcode 
-
-function barcode(r::FusionRing)::Int
-  return r.barcode
-end
-
-function mult_tab_code(mat::Array{Int,2},mult::Int)::Int
-end
-
-export sub_fusion_rings
-
-function sub_fusion_rings(r::FusionRing)
-  return r.sub_fusion_rings
-end
-
-function sub_ring_tables(mat::Array{Int,2})
-
-end
-
-function injection_form( subring::FusionRing, ring::FusionRing )
-
-end
-
-function is_sub_fusion_ring(subring::FusionRing,ring::FusionRing)::Bool
-  
-end
-
-function is_equivalent_fusion_ring(ring1::FusionRing,ring2::FusionRing)::Bool
-
-end
-
-function permutation_vector( mt1::Array{Int,3}, mt2::Array{Int,3})::Array{Int,1}
-
-end
-
-function automorphisms(r::FusionRing)::Array{Int,2}
-  
-end
-
-export decompositions
-
-function decompositions(r::FusionRing,product="TensorProduct")::Array{FusionRing,1}
-  if product == "TensorProduct"
-    return r.tensor_product_decompositions
-  else 
-    return error("Only tensor product decompositions are defined at the moment.")
-  end
-end
-
-function adjoint_fusion_ring(r::FusionRing)::FusionRing
-  
-end
-
-function upper_central_series(r::FusionRing)::Array{FusionRing,1}
-  
-end
-
-function is_nilpotent(r::FusionRing)::Bool
-  
-end
-
-function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
-  
-end
-
-function universal_grading(r::FusionRing)
-  
-end
-
-function all_gradings(r::FusionRing)
-end
-
-function commutator(r::FusionRing)
-
-end
-
-export characters 
-
-# TODO: Should not be done for non-commutative rings!!!
-function characters(ring::FusionRing)
-  if !(ring.characters === missing)
-    return ring.characters
-  elseif !FusionRings.is_commutative(ring) 
-    error("Calculation of characters for non-commutative fusion ring is not implemented yet.")
-  else
-    qqb  = algebraic_closure(QQ) 
-    mt   = FusionRings.multiplication_table( ring )
-    r    = FusionRings.rank(ring)
-    mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
-
-    function is_character_table( mat, mats )
-      all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+module Properties
+
+using ..Types: FusionRing, fusion_tensor, labels, rank
+using ..GeneralFunctions: indexmap
+using LinearAlgebra: eigen
+
+export fpdims, fpdim, is_commutative, multiplicity
+export nonzero_structure_constants, conjugation_matrix, is_group_ring
+export conjugate_element, conjugate_label, sub_fusion_rings, is_sub_fusion_ring
+
+function fpdims(fr::FusionRing)
+    r = rank(fr)
+    S = zeros(Float64, r, r)
+    N = fusion_tensor(fr)
+    for a in 1:r
+        @views S .+= N[a, :, :]
     end
-    
-    charsq = false
-    upi = 9
-    upj = 9
-    
-    proposedchars = mats[1]
-    while !charsq
-      upi += 1
-      upj += 1
-      # Take random linear rational combination of fusion mats
-      rvec 		= rand( [ i//j for i ∈ 1:upi, j ∈ 1:upj ], r )
-      combinedmat = rvec[1] * mats[1]
-      for i ∈ 2:r
-        combinedmat += rvec[i] * mats[i]
-      end
+    vals, vecs = eigen(S)
+    idx = argmax(vals)
+    v = abs.(vecs[:, idx])
+    v ./ v[1]
+end
 
-      # Find diagonalizing matrix
-      proposedchars = generalized_jordan_form( combinedmat )[2]
-      charsq = is_character_table( proposedchars, mats )
+fpdim(fr::FusionRing) = sum(x->x*x, fpdims(fr))
+
+function is_commutative(fr::FusionRing)
+    N = fusion_tensor(fr); r = size(N,1)
+    for a in 1:r, b in 1:r, c in 1:r
+        N[a,b,c] == N[b,a,c] || return false
     end
-    proposedchars
-  end 
+    true
 end
 
-function is_character_table( mat, mats )
-  all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+multiplicity(fr::FusionRing) = maximum(fusion_tensor(fr))
+
+function nonzero_structure_constants(fr::FusionRing)
+    N = fusion_tensor(fr); r = size(N,1)
+    out = Tuple{Int,Int,Int}[]
+    for a in 1:r, b in 1:r, c in 1:r
+        N[a,b,c]>0 && push!(out,(a,b,c))
+    end
+    out
 end
 
-function is_character_table( mat, ring )
-	mt   = FusionRings.multiplication_table( ring )
-	r    = FusionRings.rank(ring)
-	mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
-
-  all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+function conjugation_matrix(fr::FusionRing)
+    N = fusion_tensor(fr)
+    @views N[:, :, 1]
 end
 
-export modular_data
+"""
+    conjugate_element(fr, a) -> Int
 
-function modular_data(r::FusionRing)
-  return r.modular_data
+Return the integer index of the dual (conjugate) simple object of `a`.
+Accepts an integer index, a `String`, or a `Symbol`.
+
+Rationale: internal computations (e.g. composing with other index-based
+operations) are simpler when the result is an index rather than a label.
+Use `conjugate_label` if you need the string form.
+"""
+function conjugate_element(fr::FusionRing, a)
+    imap = indexmap(fr)
+    ai = a isa Integer ? a : imap[String(a)]
+    C = conjugation_matrix(fr)
+    findfirst(==(1), C[ai, :])::Int
 end
 
-function s_matrices(r::FusionRing)
+"""
+    conjugate_label(fr, a) -> String
 
-end
-  
-function normalized_s_matrices(r::FusionRing)
-  
+Return the label (String) of the dual simple object. Thin wrapper over
+`conjugate_element`.
+"""
+function conjugate_label(fr::FusionRing, a)
+    labels(fr)[conjugate_element(fr, a)]
 end
 
-function twist_factors(r::FusionRing)
+function is_group_ring(fr::FusionRing)
+    sum( fusion_tensor(fr) ) == FusionRings.rank(r)^2
+end
+
+function sub_fusion_rings(fr::FusionRing)
+    L = labels(fr); r = length(L)
+    sets = Vector{Vector{String}}()
+    for mask in 1:(1<<(r-1))-1
+        subset = [L[1]]
+        for i in 2:r
+            if ((mask >> (i-2)) & 1) == 1
+                push!(subset, L[i])
+            end
+        end
+        if is_sub_fusion_ring(fr, subset) && length(subset)<r
+            push!(sets, subset)
+        end
+    end
+    sets
+end
+
+function is_sub_fusion_ring(fr::FusionRing, S::Vector)
+    # Accept Vector{String} preferred, but allow symbols via conversion
+    S2 = [s isa Symbol ? String(s) : String(s) for s in S]
+    Sset = Set(S2)
+    all(l -> l in Sset, labels(fr)[1:1]) || return false
+    imap = indexmap(fr)
+    for a in S2, b in S2
+        ai = imap[a]; bi = imap[b]
+        N = fusion_tensor(fr)[ai,bi,:]
+        for (ci,m) in enumerate(N)
+            m==0 && continue
+            c = labels(fr)[ci]
+            c in Sset || return false
+        end
+    end
+    true
+end
+
+"""
+    is_sub_fusion_ring(big::FusionRing, small::FusionRing) -> Bool
+
+Return true if `small` is (isomorphic to) a fusion subring of `big` on the
+same labeling of simples restricted to a subset.
+
+Criteria:
+* All labels of `small` must appear among `big`'s labels (string match).
+* The fusion tensors must agree for all triples of indices inside that subset.
+
+Note: This is a structural containment check under the identity embedding
+determined by matching labels; it does not attempt to permute labels of the
+subring to achieve a match. Use an equivalence/permutation utility first if
+you need to test up to relabeling.
+"""
+function is_sub_fusion_ring(big::FusionRing, small::FusionRing)
+    Lbig = labels(big); Lsmall = labels(small)
+    # Quick label inclusion
+    label_pos = Dict{String,Int}()
+    for (i,l) in enumerate(Lbig); label_pos[l] = i; end
+    idxs = Int[]
+    for l in Lsmall
+        i = get(label_pos, l, 0)
+        i == 0 && return false
+        push!(idxs, i)
+    end
+    Nbig = fusion_tensor(big)
+    Nsmall = fusion_tensor(small)
+    r2 = length(Lsmall)
+    @inbounds for a in 1:r2, b in 1:r2, c in 1:r2
+        if Nsmall[a,b,c] != Nbig[idxs[a], idxs[b], idxs[c]]
+            return false
+        end
+    end
+    true
+end
 
 end

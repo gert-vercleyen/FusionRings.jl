@@ -1,242 +1,65 @@
-include("GeneralFunctions.jl")
 
-struct FusionRing
-    multiplication_table::Array{Int64,3}
-    names
-    texnames
-    element_names::Vector{String}
-    barcode
-    formal_code
-    tensor_product_decompositions
-    sub_fusion_rings
-    frobenius_perron_dimensions
-    modular_data
-    characters
-    numeric_frobenius_perron_dimensions
-    numeric_modular_data
-    numeric_characters
-end
+module Creation
+
+using ..Types: FusionRing
+using LinearAlgebra
 
 export fusion_ring
 
-check_struct_const(mt) = all(x -> x isa Integer && x >= 0, mt)
+_nonnegints(A) = all(x -> x isa Integer && x ≥ 0, A)
+_cubic3(A) = ndims(A)==3 && size(A,1)==size(A,2)==size(A,3)
 
-function check_mt_dims(mt)
-    dims = size(mt)
-    length(dims) == 3 && is_constant_array(dims)
-end
-
-function check_unit(mt)
-    r = size(mt)[1]
-    δ(i,j) = i == j ? 1 : 0
-    for i in 1:r, j in 1:r
-        if !(mt[1, i, j] == mt[i, 1, j] == δ(i,j))
-            return false
-        end
-        continue
+function _unit_ok(N::Array{Int,3})
+    r = size(N,1)
+    for a in 1:r, b in 1:r
+        if N[1,a,b] != (a==b ? 1 : 0); return false; end
+        if N[a,1,b] != (a==b ? 1 : 0); return false; end
     end
     return true
 end
 
-check_inverse(mt) = sum(mt[:, :, 1]) == size(mt, 1)
-
-function check_associativity(mt::Array{Int, 3})
-    r = size(mt, 1)
+function _associative(N::Array{Int,3})
+    r = size(N,1)
     for a in 1:r, b in 1:r, c in 1:r, d in 1:r
-        lhs = sum(mt[a, b, e] * mt[e, c, d] for e in 1:r)
-        rhs = sum(mt[a, f, d] * mt[b, c, f] for f in 1:r)
-        lhs == rhs || return false
+        lhs = 0; rhs = 0
+        for e in 1:r
+            lhs += N[a,b,e]*N[e,c,d]
+            rhs += N[a,e,d]*N[b,c,e]
+        end
+        lhs==rhs || return false
     end
-    true
+    return true
 end
 
-check_element_names(mt, names) = length(names) == size(mt, 1)
+"""
+        fusion_ring(N; labels=nothing, name="FusionRing") -> FusionRing
 
+Construct a `FusionRing` from a rank-`r` structure tensor `N[a,b,c]` with
+nonnegative integer entries. This function is the *sole* gatekeeper of the
+defining fusion ring axioms in this package. After construction we assume:
 
-function fusion_ring(
-    mt; 
-    names                               = missing, 
-    texnames                            = missing, 
-    element_names                       = missing,
-    barcode                             = missing, 
-    formal_code                         = missing,
-    tensor_product_decompositions       = missing, 
-    sub_fusion_rings                    = missing,
-    frobenius_perron_dimensions         = missing, 
-    modular_data                        = missing,
-    characters                          = missing, 
-    numeric_characters                  = missing,  
-    numeric_frobenius_perron_dimensions = missing,
-    numeric_modular_data                = missing,
-    skip_check                          = false,
-    )
+    • Nonnegativity: all `N[a,b,c] ≥ 0`.
+    • Cubic tensor: `size(N) == (r,r,r)`.
+    • Unit: index `1` labels the tensor unit so `N[1,a,b] = N[a,1,b] = δ_{a,b}`.
+    • Associativity: Σ_e N[a,b,e] N[e,c,d] == Σ_e N[a,e,d] N[b,c,e].
+    • Labels vector length equals rank and label 1 is the unit.
 
-    if !skip_check
-        check_struct_const(mt)     || error("All structure constants must be non-negative integers")
-        check_mt_dims(mt)          || error("multiplication_table must be a 3-tensor with equal side lengths")
-        check_unit(mt)             || error("First basis element must act as unit object")
-        check_inverse(mt)          || error("Each simple object must have a unique inverse")
-        check_associativity(mt)    || error("Structure constants violate associativity")
-        (element_names === missing || check_element_names(mt, element_names)) ||
-            error("element_names length ≠ rank")
+Downstream functions *do not re-validate* these invariants for performance;
+they trust that any `FusionRing` value was created here. Inputs may also be
+provided with labels as `Symbol`s; they are normalized to `String`.
+"""
+function fusion_ring(N::Array{Int,3}; labels::Union{Nothing,Vector{Symbol},Vector{String}}=nothing, name::String="FusionRing")
+    !_nonnegints(N) && error("Structure constants must be nonnegative integers.")
+    !_cubic3(N) && error("Tensor must be 3-dimensional and cubic.")
+    !_unit_ok(N) && error("First simple must act as the tensor unit.")
+    !_associative(N) && error("Tensor fails associativity.")
+    if labels === nothing
+        labels = [i==1 ? "1" : string(i-1) for i in 1:size(N,1)]
+    elseif eltype(labels) <: Symbol
+        labels = String.(labels)
     end
-
-    element_names === missing && (element_names = [bold_integer(i) for i in 1:size(mt, 1)])
-
-    FusionRing(
-        Int.(mt), 
-        names, 
-        texnames, 
-        element_names, 
-        barcode, 
-        formal_code,
-        tensor_product_decompositions, 
-        sub_fusion_rings, 
-        frobenius_perron_dimensions,
-        modular_data, 
-        characters,
-        numeric_frobenius_perron_dimensions,
-        numeric_modular_data,
-        numeric_characters
-    )
+    length(labels)==size(N,1) || error("labels length must equal rank.")
+    return FusionRing(N, labels, name)
 end
 
-# Formatting of fusion rings 
-function Base.show( io::IO, ring::FusionRing ) 
-    p(str) = print( io, str );
-    if !ismissing(ring.names)
-        p( "FR(" * names(ring)[1] * ")" )
-    elseif !ismissing(ring.formal_code)
-        p( "FR(" * string(anyonwiki_code(ring))[2:end-1] * ")" )
-    else
-        props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
-        p( "FR(" * join( props, ", "  ) * ")" )
-    end
 end
-
-export psu2k_fusion_ring, su2k_fusion_ring, son2_fusion_ring, metaplectic_fusion_ring,
-       fusion_ring_from_group, zn_fusion_ring, group_rep_fusion_ring, hi_fusion_ring,
-       ty_fusion_ring
-
-range_psu2k(i, j, k) = abs(i - j):2:min(i + j, 2k - i - j)
-
-# TODO: add missing information
-# TODO: code for element_names is a bit too dense
-# PSU(2)_k
-function psu2k_fusion_ring(k::Int)::FusionRing
-    rk = div(k, 2) + 1
-    mt = fill(0, rk, rk, rk)
-    for a in 0:2:k, b in 0:2:k, c in 0:2:k
-        c in range_psu2k(a, b, k) && (mt[div(a, 2)+1, div(b, 2)+1, div(c, 2)+1] = 1)
-    end
-
-    elnames = 
-        [
-            denominator((i-1)//2) == 1 ? 
-            string((i-1)//2) :
-            string(numerator((i-1)//2))*"/"*string(denominator((i-1)//2))
-            for i in 1:rk
-        ]
-    
-    fusion_ring(
-        mt,
-        names = ["PSU(2)" * subscript_integer(k)],
-        element_names = elnames
-    )
-end
-
-# TODO: add missing information
-# SU(2)_k
-function su2k_fusion_ring(k::Int)::FusionRing
-    rk = k + 1
-    mt = fill(0, rk, rk, rk)
-    for a in 0:k, b in 0:k, c in 0:k
-        c in range_psu2k(a, b, k) && (mt[a+1, b+1, c+1] = 1)
-    end
-    fusion_ring(
-        mt, 
-        names = ["SU(2)" * subscript_integer(k)],
-        element_names = string.(0:k)
-    )
-end
-
-
-# TODO: add missing information
-function zn_fusion_ring(n::Int)::FusionRing
-    mt = fill(0, n, n, n)
-    for i in 0:n-1, j in 0:n-1
-        k = mod(i + j, n)
-        mt[i+1, j+1, k+1] = 1
-    end
-    fusion_ring(
-        mt,
-        names = ["Z_" * string(n)],
-        element_names = string.(0:n-1)
-    )
-end
-
-# fusion‑ring creation from a group multiplication table
-
-function is_cayley_table(gmt::Array{Int, 2})
-    r = size(gmt, 1)
-    size(gmt, 2) == r || return false
-    # each row/col is a permutation of 1:r
-    all(all(sort(gmt[i, :]) == 1:r for i in 1:r)) || return false
-    all(all(sort(gmt[:, j]) == 1:r for j in 1:r)) || return false
-    # each element appears exactly once in its own row/col diag -> inverses
-    # associativity check via fusion_ring constructor later
-    true
-end
-
-# TODO: add missing information
-function fusion_ring_from_group(gmt::Array{Int, 2}; skipcheck::Bool = false)::FusionRing
-    !skipcheck && is_cayley_table(gmt) || error("Provided table is not a valid Cayley table")
-    r = size(gmt, 1)
-    mt = fill(0, r, r, r)
-    for i in 1:r, j in 1:r
-        mt[i, j, gmt[i, j]] = 1
-    end
-    fusion_ring(mt, skip_check = skipcheck)
-end
-
-# TODO: Overload for actual group objects (needs character data)
-function fusion_ring_from_group(grp)
-    throw(ErrorException("fusion_ring_from_group(grp) not yet implemented — require group algebra / character data"))
-end
-
-# TODO: add missing information
-# Tambara–Yamagami rings
-function ty_fusion_ring(G::AbstractVector)::FusionRing
-    n = length(G)
-    rank = n + 1
-    mt = fill(0, rank, rank, rank)
-    # group object fusion
-    for i in 1:n, j in 1:n
-        k = mod(i + j - 2, n) + 1
-        mt[i, j, k] = 1
-    end
-    m = rank
-    for i in 1:n
-        mt[i, m, m] = 1; mt[m, i, m] = 1
-    end
-    for i in 1:n
-        mt[m, m, i] = 1
-    end
-    fusion_ring(
-        mt,
-        names = ["TY(" * join(G, ",") * ")"],
-        element_names = vcat(string.(G), ["m"])
-    )
-end
-
-# TODO: implement 
-son2_fusion_ring(n::Int) = throw(ErrorException("son2_fusion_ring requires SO(n)_2 fusion rules (TODO)"))
-# TODO: implement 
-metaplectic_fusion_ring(m::Int) = throw(ErrorException("metaplectic_fusion_ring not yet implemented"))
-
-# TODO: implement 
-group_rep_fusion_ring(grp) = throw(ErrorException("group_rep_fusion_ring needs character tables (TODO)"))
-# TODO: implement 
-hi_fusion_ring(grp)       = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
-
-groupname(grp) = try string(grp) catch; "Unknown Group" end
