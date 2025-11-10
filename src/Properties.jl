@@ -292,25 +292,22 @@ function characters(ring::FusionRing)
       upi += 1
       upj += 1
       # Take random linear rational combination of fusion mats
-      rvec 		= rand( [ i//j for i ∈ 1:upi, j ∈ 1:upj ], r )
-      combinedmat = rvec[1] * mats[1]
+      rvec = rand( [ i//j for i ∈ 1:upi, j ∈ 1:upj ], r )
+      sgnvec = rand( [ -1 1 ], r )
+      combinedmat = sgnvec[1] * rvec[1] * mats[1]
       for i ∈ 2:r
-        combinedmat += rvec[i] * mats[i]
+        combinedmat += sgnvec[i] * rvec[i] * mats[i]
       end
 
       # Find diagonalizing matrix
       proposedchars = generalized_jordan_form( combinedmat )[2]
       charsq = is_character_table( proposedchars, mats )
     end
-    proposedchars
+    [ proposedchars[i,j] for i in 1:r, j in 1:r ]
   end 
 end
 
-function is_character_table( mat, mats )
-  all( is_diagonal( mat * m * inv(mat) ) for m in mats )
-end
-
-function is_character_table( mat, ring )
+function is_character_table( mat, ring::FusionRing )
 	mt   = FusionRings.multiplication_table( ring )
 	r    = FusionRings.rank(ring)
 	mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
