@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.19
+# v0.20.20
 
 using Markdown
 using InteractiveUtils
@@ -7,8 +7,10 @@ using InteractiveUtils
 # ╔═╡ 4f8788dc-b431-11f0-01df-fd75003adb9b
 # ╠═╡ show_logs = false
 begin
+	using Revise
 	using Pkg;
-	Pkg.develop(path="/home/gert/Projects/FusionRings.jl/")
+	#Pkg.develop(path="/home/gert/Projects/FusionRings.jl/")
+	Pkg.develop(path="/Users/gertvercleyen/Projects/FusionRings.jl/")
 	using FusionRings
 	using Oscar
 end
@@ -20,7 +22,7 @@ md"""
 
 # ╔═╡ e6ef9a18-94a6-44e5-b590-f08a12b2f4cf
 md"""
-# Initialize field
+# Initialize ``\overline{\mathbb{Q}}``
 """
 
 # ╔═╡ 69d5a5bf-6952-4870-bbfb-39170b17940c
@@ -34,8 +36,25 @@ md"""
 # ╔═╡ 93079240-ee00-4e8b-8bcd-ca98d1c7f016
 mt = FusionRings.multiplication_table
 
+# ╔═╡ 9e9d0d16-5907-4601-b59a-f03556541567
+function is_constant_array( arr; equalfunc = === ) 
+  if isempty(arr)
+    return true 
+  end
+  first = arr[1]
+  return all( equalfunc( element, first ) for element in arr )
+end
+
+# ╔═╡ 3d817d5e-728a-45b3-bdba-7270a72a7c9b
+md"""
+# Time to test 
+"""
+
 # ╔═╡ e1481c23-1f4e-4001-b457-337e42d684b3
 r = psu2k_fusion_ring(7)
+
+# ╔═╡ e63f950e-cf36-4199-a043-3238359d1be2
+
 
 # ╔═╡ 835a0145-d7cf-41ce-9739-40bb0e05d89f
 # ╠═╡ disabled = true
@@ -44,74 +63,76 @@ m = matrix( ZZ, mt(r)[2,:,:] )
   ╠═╡ =#
 
 # ╔═╡ 324dc15c-256f-4b72-b351-ec5cd1c21e77
-v = [ 2 3 5 7 ]
+ch = characters(r)
 
-# ╔═╡ d0613f9e-d892-4dd9-bdcb-a41f52c8397e
-m2 = v[1] * matrix(qqb, mt(r)[2,:,:])
+# ╔═╡ b25af0b1-010b-4a9d-8698-dab097f90ed7
+function to_combined_numberfield( 
+    arr::Array{QQBarFieldElem}; 
+    simplify_field = false, 
+    canonical_simplification = true
+    )
 
-# ╔═╡ ae07fa0e-e5b6-4fc2-920b-f61e635cffc0
-typeof(m2)
-
-# ╔═╡ 3fa439a9-b9de-42a5-8cad-06a03cc0685c
-generalized_jordan_form(m2)
-
-# ╔═╡ 0454c6ff-a6a0-4582-8343-b72e971914ec
-function eigenvectors( field, mat ) 
-	zzmat = ZZMatrix( mat )
-	evals = eigenvalues( field, mat )
+  numfield, f = number_field( QQ, unique( arr ), cached = false )
+   
+  if simplify_field 
+    simpler_numfield, g = simplify( numfield; canonical = canonical_simplification )
+    to_field_elem = x -> preimage( g, preimage( f, x ) )
+    return ( to_field_elem.(arr), ( g, f ) ) #TODO: (f,g) should be composition
+  else 
+    to_field_elem = x -> preimage( f, x )
+    return ( to_field_elem.(arr), f )
+  end
 end
 
-# ╔═╡ 29897985-2b97-460e-86c0-9376db4ae8f9
-function is_character_table( mat, ring::FusionRings.FusionRing )
-	mt   = FusionRings.multiplication_table( ring )
-	r    = FusionRings.rank(ring)
-	mats = [ matrix( qqb, r, r, mt[ i, :, : ] ) for i ∈ 1:r ]
-	all( is_diagonal.( mat * m * inv(mat) for m in mats ) )
-end
+# ╔═╡ 42dd1286-4197-442d-93f6-0a66b8de2dc6
+numch, emb = to_combined_numberfield(ch;simplify_field = false)
 
-# ╔═╡ 045e816d-ac5a-4b30-83c7-26424444708c
-function is_character_table( mat, mats )
-	all( is_diagonal( mat * m * inv(mat) ) for m in mats )
-end
+# ╔═╡ 6971f1d5-a26b-4a47-98a9-8bcf24ec8e12
+hom( 
+	numch[1,1] |> parent,
+	qqb,
+	numch[1,1] |> parent |> gen |> emb[1] |> emb[2]
+)
+#emb[2]( 
+#	emb[1]( 
+#		gen( parent( numch[1,1] ) ) ) 
+#	  )
 
-# ╔═╡ 0b893b9d-d238-4b2f-afdc-6bdec959c08e
-function characters( ring )
-	mt   = FusionRings.multiplication_table( ring )
-	r    = FusionRings.rank(ring)
-	mats = [ matrix( qqb, r, r, mt[ i, :, : ] ) for i ∈ 1:r ]
+# ╔═╡ a46a09bd-48a4-4f4f-b94e-f6904b15e841
+Oscar.save("/Users/gertvercleyen/test.mrdi", numch)
 
-	function is_character_table( mat, mats )
-		!(false ∈ map( is_diagonal, map( x -> mat * x * inv(mat), mats ) ))
-	end
+# ╔═╡ 071269d5-9701-4fa4-b4fa-cb7c4dc2120c
+emb( numch[1,1] )
+
+# ╔═╡ b775919c-11bf-4d60-bcb1-14994c3513fb
+ch[1,1]
+
+# ╔═╡ 1c6e0524-0b46-4a59-b4a9-8fd15936045d
+function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb ) 
+	length(arr) === 0 && return ( arr, emb )
 	
-	charsq = false
-	upi = 9
-	upj = 9
-	
-	proposedchars = mats[1]
-	while !charsq
-		upi += 1
-		upj += 1
-		# Take random linear rational combination of fusion mats
-		rvec 		= rand( [ i//j for i ∈ 1:upi, j ∈ 1:upj ], r )
-		combinedmat = rvec[1] * mats[1]
-		for i ∈ 2:r
-			combinedmat += rvec[i] * mats[i]
-		end
+	# Check parrent field of all fields are equal
+	is_constant_array( parent.( arr ) ) || error("Elements of array should belong to same field")
 
-		# Find diagonalizing matrix
-		proposedchars = generalized_jordan_form( combinedmat )[2]
-		# Check whether procedure succeeded
-		charsq = is_character_table( proposedchars, mats )
-	end
-	proposedchars
+	𝕂  = parent( arr[1] )
+	C  = ray_class_field(simplify(𝕂)[1]) 
+	𝕃, = C |> conductor |> first |> minimum |> Int |> cyclotomic_field
+		
+	i  = 
+		hom( 
+			𝕂, 
+			𝕃, 
+			first( roots( 𝕃, defining_polynomial(𝕂)/leading_coefficient(defining_polynomial(𝕂)) ) )
+		)
+	
+	return ( i.(arr), ( emb, i ) )
 end
 
-# ╔═╡ 1142ef18-2eb8-4846-895a-fb510d4fd546
-x = characters(r)
+# ╔═╡ 66779bbe-4aa9-4e5a-a99c-0b9c80f923b1
+to_cyclotomic_field( numch, emb )
 
-# ╔═╡ de8ff568-b818-4d9e-92e0-3e27337d64ca
-is_character_table( x, r )
+# ╔═╡ 14cf6184-8740-4e4f-8933-7e117f32d52e
+methods(hom)
 
 # ╔═╡ Cell order:
 # ╟─95eeb20c-3efd-4285-b6a3-8d8d37aaee05
@@ -120,15 +141,18 @@ is_character_table( x, r )
 # ╠═69d5a5bf-6952-4870-bbfb-39170b17940c
 # ╟─2921df86-567e-4149-9677-c6fc821cb210
 # ╠═93079240-ee00-4e8b-8bcd-ca98d1c7f016
+# ╠═9e9d0d16-5907-4601-b59a-f03556541567
+# ╟─3d817d5e-728a-45b3-bdba-7270a72a7c9b
 # ╠═e1481c23-1f4e-4001-b457-337e42d684b3
+# ╠═e63f950e-cf36-4199-a043-3238359d1be2
 # ╠═835a0145-d7cf-41ce-9739-40bb0e05d89f
 # ╠═324dc15c-256f-4b72-b351-ec5cd1c21e77
-# ╠═d0613f9e-d892-4dd9-bdcb-a41f52c8397e
-# ╠═ae07fa0e-e5b6-4fc2-920b-f61e635cffc0
-# ╠═3fa439a9-b9de-42a5-8cad-06a03cc0685c
-# ╠═0454c6ff-a6a0-4582-8343-b72e971914ec
-# ╠═29897985-2b97-460e-86c0-9376db4ae8f9
-# ╠═045e816d-ac5a-4b30-83c7-26424444708c
-# ╠═0b893b9d-d238-4b2f-afdc-6bdec959c08e
-# ╠═1142ef18-2eb8-4846-895a-fb510d4fd546
-# ╠═de8ff568-b818-4d9e-92e0-3e27337d64ca
+# ╠═b25af0b1-010b-4a9d-8698-dab097f90ed7
+# ╠═42dd1286-4197-442d-93f6-0a66b8de2dc6
+# ╠═6971f1d5-a26b-4a47-98a9-8bcf24ec8e12
+# ╠═a46a09bd-48a4-4f4f-b94e-f6904b15e841
+# ╠═071269d5-9701-4fa4-b4fa-cb7c4dc2120c
+# ╠═b775919c-11bf-4d60-bcb1-14994c3513fb
+# ╠═1c6e0524-0b46-4a59-b4a9-8fd15936045d
+# ╠═66779bbe-4aa9-4e5a-a99c-0b9c80f923b1
+# ╠═14cf6184-8740-4e4f-8933-7e117f32d52e
