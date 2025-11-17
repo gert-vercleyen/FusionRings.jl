@@ -72,12 +72,13 @@ function to_combined_numberfield(
     canonical_simplification = true
     )
 
-  numfield, f = number_field( QQ, unique( arr ), cached = false )
+  K, f = number_field( QQ, unique( arr ), cached = false )
    
   if simplify_field 
-    simpler_numfield, g = simplify( numfield; canonical = canonical_simplification )
-    to_field_elem = x -> preimage( g, preimage( f, x ) )
-    return ( to_field_elem.(arr), ( g, f ) ) #TODO: (f,g) should be composition
+    L, g = simplify( K; canonical = canonical_simplification )
+    to_field_elem  = x -> preimage( g, preimage( f, x ) )
+	fg = hom( L, algebraic_closure(QQ), f(g(gen(L))) )
+    return ( to_field_elem.(arr), fg)
   else 
     to_field_elem = x -> preimage( f, x )
     return ( to_field_elem.(arr), f )
@@ -85,21 +86,22 @@ function to_combined_numberfield(
 end
 
 # ╔═╡ 42dd1286-4197-442d-93f6-0a66b8de2dc6
-numch, emb = to_combined_numberfield(ch;simplify_field = false)
+
+numch, emb = to_combined_numberfield(ch;simplify_field = true)
 
 # ╔═╡ 6971f1d5-a26b-4a47-98a9-8bcf24ec8e12
-hom( 
-	numch[1,1] |> parent,
-	qqb,
-	numch[1,1] |> parent |> gen |> emb[1] |> emb[2]
-)
-#emb[2]( 
-#	emb[1]( 
-#		gen( parent( numch[1,1] ) ) ) 
-#	  )
+emb( numch[1,1] ) == ch[1,1]
+
+# ╔═╡ c136a86f-fe28-440d-b6a3-e2fa22340537
+begin
+	#qqb = algebraic_closure(QQ)
+	arr = [ sqrt(qqb(2)), sqrt(qqb(13) + sqrt(qqb(13)) ) ]
+	numarr, m = to_combined_numberfield( arr, simplify_field = true )
+end
 
 # ╔═╡ a46a09bd-48a4-4f4f-b94e-f6904b15e841
-Oscar.save("/Users/gertvercleyen/test.mrdi", numch)
+m(numarr[2])
+>>>>>>> Stashed changes
 
 # ╔═╡ 071269d5-9701-4fa4-b4fa-cb7c4dc2120c
 emb( numch[1,1] )
