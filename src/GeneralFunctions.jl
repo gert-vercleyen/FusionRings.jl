@@ -68,3 +68,42 @@ function to_composite_field(
     return ( to_field_elem.(arr), f )
   end
 end
+
+function to_composite_field( 
+  arr::Array{QQBarFieldElem}; 
+  simplify_field = false, 
+  canonical_simplification = true
+  )
+
+  K, f = number_field( QQ, unique( arr ) )
+  
+  if simplify_field 
+    L, g = simplify( K; canonical = canonical_simplification )
+    to_field_elem  = x -> preimage( g, preimage( f, x ) )
+    fg = hom( L, algebraic_closure(QQ), f(g(gen(L))) )
+    return ( to_field_elem.(arr), fg )
+  else 
+    to_field_elem = x -> preimage( f, x )
+    return ( to_field_elem.(arr), f )
+  end
+end
+
+function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb ) 
+	length(arr) === 0 && return ( arr, emb )
+	
+	# Check parrent field of all fields are equal
+	is_constant_array( parent.( arr ) ) || error("Elements of array should belong to same field")
+
+	qqb = algebraic_closure(QQ)
+	K   = parent( arr[1] )
+	C   = ray_class_field( K ) 
+	L,  = C |> conductor |> first |> minimum |> Int |> cyclotomic_field
+		
+	i  = 
+		hom( K, L, roots( L, defining_polynomial(K) ) |> first )
+	
+	emb_inv_i = 
+		hom( L, qqb, emb( preimage( i, gen(L) ) ) )
+	
+	return ( i.(arr), emb_inv_i )
+end
