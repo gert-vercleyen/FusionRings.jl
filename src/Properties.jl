@@ -114,6 +114,82 @@ function is_sub_fusion_ring(fr::FusionRing, S::Vector)
     true
 end
 
+
+
+export upper_central_series, upper_central_series_support, upper_central_length
+
+"""
+    upper_central_series_support(fr::FusionRing) -> Vector{Vector{Int}}
+
+Return the sequence of supports for the *upper central series*
+`R^(0)=R`, `R^(n+1)=Adj(R^(n))`, stopping when supports stabilize or when
+`rank(R^(n)) == 1`. Each support is a sorted vector of simple indices.
+"""
+function upper_central_series_support(fr::FusionRing)::Vector{Vector{Int}}
+    supports = Vector{Vector{Int}}()
+    # start at R^(0): all simples
+    push!(supports, collect(1:rank(fr)))
+
+    # iterate via adjoint support
+    maxsteps = 3 * rank(fr)
+    cur = fr
+    for _ in 1:maxsteps
+        S = _adjoint_support(cur)              # uses the helpers we added earlier
+        S = sort(S)
+        push!(supports, S)
+
+        # stop if rank 1 or stabilized
+        if length(S) == 1
+            break
+        end
+        # restrict and continue
+        cur = _restrict_subring(cur, S)
+        # If the last two supports are equal, we stabilized
+        length(supports) ≥ 2 && supports[end] == supports[end-1] && break
+    end
+    supports
+end
+
+"""
+    upper_central_series(fr::FusionRing) -> Vector{FusionRing}
+
+Return the chain of fusion rings `[R^(0), R^(1), ..., R^(m)]` in the *upper central series*,
+stopping at stabilization or at the trivial ring (rank 1).
+"""
+function upper_central_series(fr::FusionRing)::Vector{FusionRing}
+    series = FusionRing[fr]
+    maxsteps = 3 * rank(fr)
+    cur = fr
+    for _ in 1:maxsteps
+        cur = _adjoint_subring(cur; check_closed=true)
+        push!(series, cur)
+        if rank(cur) == 1
+            break
+        end
+        # stop if the last two rings have identical supports
+        S_prev = collect(1:rank(series[end-1]))
+        S_prev = _adjoint_support(series[end-1])  # support generating next step
+        S_curr = _adjoint_support(cur)
+        if sort(S_curr) == sort(S_prev)
+            break
+        end
+    end
+    series
+end
+
+"""
+    upper_central_length(fr::FusionRing) -> Int
+
+Return the index `m` of the last term in `upper_central_series(fr)`. If `fr` is already
+trivial (rank 1), this returns `0`.
+"""
+function upper_central_length(fr::FusionRing)::Int
+    series = upper_central_series(fr)
+    return length(series) - 1
+end
+
+
+
 """
     is_sub_fusion_ring(big::FusionRing, small::FusionRing) -> Bool
 
