@@ -36,6 +36,21 @@ function row_to_string(r::FusionRing, row)::String
   )
 end
 
+
+function tensor_product(fr::FusionRing, a, b)
+    imap = indexmap(fr)
+    normalize(x) = x isa Integer ? x : imap[String(x)]
+    ai = normalize(a); bi = normalize(b)
+    N = fusion_tensor(fr)[ai,bi,:]
+    out = Dict{String,Int}()
+    L = labels(fr)
+    for (ci,m) in enumerate(N)
+        m==0 && continue
+        out[L[ci]] = m
+    end
+    out
+end
+
 function element_to_string(mult,elem)::String
   if mult == 0 
     return ""
