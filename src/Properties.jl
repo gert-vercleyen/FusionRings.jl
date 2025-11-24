@@ -26,7 +26,7 @@ export row_to_string
 
 function row_to_string(r::FusionRing, row)::String
   n             = length(row)
-  el_names      = element_names(r)
+  el_names      = labels(r)
   non_zero_ind  = findall(i -> row[i] > 0, 1:n)
   to_string(i)  = element_to_string(row[i], el_names[i])
 
@@ -63,13 +63,13 @@ end
 export tex_names
 
 function tex_names(r::FusionRing)::Array{String,1}
-  return r.texnames
+  return r.labels
 end
 
-export element_names
+export labels
 
-function element_names(r::FusionRing)::Array{String,1}
-  return r.element_names
+function labels(r::FusionRing)::Array{String,1}
+  return r.labels
 end
 
 export conjugation_matrix
@@ -267,7 +267,6 @@ end
 
 export characters 
 
-# TODO: Should not be done for non-commutative rings!!!
 function characters(ring::FusionRing)
   if !(ring.characters === missing)
     return ring.characters
@@ -303,6 +302,7 @@ function characters(ring::FusionRing)
       proposedchars = generalized_jordan_form( combinedmat )[2]
       charsq = is_character_table( proposedchars, mats )
     end
+    # TODO: Normalize matrix and set up some convention for order of characters
     [ proposedchars[i,j] for i in 1:r, j in 1:r ]
   end 
 end
@@ -313,6 +313,75 @@ function is_character_table( mat, ring::FusionRing )
 	mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
 
   all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+end
+
+function to_canonical_character_tab()
+end
+
+function normalize_characters()
+end
+
+
+
+"""
+    numeric_characters(R::FusionRing; tries=8, tol=1e-10) -> (C, V)
+
+Return the **character table** `C::Matrix{ComplexF64}` of a **commutative** fusion ring `R`,
+together with a matrix `V` whose columns are a common eigenbasis for the fusion matrices.
+
+By definition here, `C[j,i]` is the eigenvalue of `N_i` on the `j`-th common eigenline
+(i.e. character `χ_j` evaluated on basis element `i`).
+
+Algorithm:
+1. Form a random real combination `M = ∑_k c_k N_k`.
+2. Eigen-decompose `M = V Λ V⁻¹`.
+3. Verify that every `V⁻¹ N_i V` is (numerically) diagonal. If not, retry.
+
+Throws if no common eigenbasis is found after `tries` attempts.
+"""
+function numeric_characters(R::FusionRing; tries::Int=8, tol::Real=1e-10)
+    labs = labels(R)
+    r = length(labs)
+    Nis = [Matrix{Float64}(fusion_matrix(R, a)) for a in labs]
+
+    # quick commutativity sanity check
+    if !FusionRings.is_commutative(R) 
+        error("fusion_ring_characters: ring appears non-commutative; this routine requires commuting fusion matrices.")
+    end
+
+    for _ in 1:tries
+        coeffs = randn(r)
+        M = zeros(Float64, r, r)
+        @inbounds for k in 1:r
+            M .+= coeffs[k] .* Nis[k]
+        end
+
+        ev = eigen(M)                    # symmetric not guaranteed; generic eigen
+        V  = Matrix(ev.vectors)
+        Vinv = inv(V)                    # small r; explicit inverse is fine here
+
+        # Check diagonalisation
+        diags = Vector{Vector{ComplexF64}}(undef, r)
+        ok = true
+        for i in 1:r
+            D = Vinv * Nis[i] * V
+            off = copy(D); @inbounds for j in 1:r; off[j,j] = 0.0; end
+            if norm(off) > tol
+                ok = false
+                break
+            end
+            diags[i] = ComplexF64.(diag(D))
+        end
+        if ok
+            C = zeros(ComplexF64, r, r)
+            @inbounds for i in 1:r
+                C[:, i] = diags[i]
+            end
+            return C, V
+        end
+    end
+
+    error("fusion_ring_characters: failed to find a common eigenbasis. Increase `tries` or check commutativity.")
 end
 
 export modular_data

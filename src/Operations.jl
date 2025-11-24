@@ -29,7 +29,7 @@ function permute(r::FusionRing, perm::Vector{Int})::FusionRing
     mt_new = permute_mult_tab(multiplication_table(r), perm)
 
     # Metadata that needs re‑ordering (guard against `missing`)
-    el_names = element_names(r)[perm]
+    el_names = labels(r)[perm]
     fpdims   = r.frobenius_perron_dimensions === missing ?
                missing : r.frobenius_perron_dimensions[perm]
     chars    = r.characters === missing ?
@@ -43,8 +43,8 @@ function permute(r::FusionRing, perm::Vector{Int})::FusionRing
 
     return fusion_ring(mt_new;                       # core data
         names         = r.names,
-        texnames      = r.texnames,
-        element_names = el_names,
+        texnames      = r.labels,
+        labels = el_names,
         barcode       = r.barcode,
         formal_code   = r.formal_code,
         sub_fusion_rings = r.sub_fusion_rings,
@@ -109,7 +109,7 @@ function tensor_product(r1::FusionRing, r2::FusionRing)::FusionRing
     end
 
     # Assemble element names
-    elnames = [ string(e1, "⊗", e2) for e1 in element_names(r1) for e2 in element_names(r2) ]
+    elnames = [ string(e1, "⊗", e2) for e1 in labels(r1) for e2 in labels(r2) ]
 
     fp1, fp2 = r1.frobenius_perron_dimensions, r2.frobenius_perron_dimensions
     fpdims_new = (fp1 === missing || fp2 === missing) ?
@@ -117,7 +117,7 @@ function tensor_product(r1::FusionRing, r2::FusionRing)::FusionRing
 
     names = isempty(r1.names) || isempty(r2.names) ? missing : [string(r1.names[1], " × ", r2.names[1])]
 
-    return fusion_ring(mt; names = names, element_names = elnames, frobenius_perron_dimensions = fpdims_new)
+    return fusion_ring(mt; names = names, labels = elnames, frobenius_perron_dimensions = fpdims_new)
 end
 
 const ⊗ = tensor_product

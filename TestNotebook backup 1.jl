@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.19
+# v0.20.20
 
 using Markdown
 using InteractiveUtils
@@ -9,11 +9,10 @@ using InteractiveUtils
 begin
 	using Revise
 	using Pkg;
-	Pkg.develop(path="/home/gert/Projects/FusionRings.jl/")
-	#Pkg.develop(path="/Users/gertvercleyen/Projects/FusionRings.jl/")
+	#Pkg.develop(path="/home/gert/Projects/FusionRings.jl/")
+	Pkg.develop(path="/Users/gertvercleyen/Projects/FusionRings.jl/")
 	using FusionRings
 	using Oscar
-	using JSON
 end
 
 # ╔═╡ 95eeb20c-3efd-4285-b6a3-8d8d37aaee05
@@ -93,8 +92,22 @@ numch, emb = to_combined_numberfield(ch;simplify_field = true)
 # ╔═╡ 6971f1d5-a26b-4a47-98a9-8bcf24ec8e12
 emb( numch[1,1] ) == ch[1,1]
 
-# ╔═╡ 319f77ac-06ac-47fb-bc5f-2ced396612d6
-defining_polynomial(parent(numch[1,1]))
+# ╔═╡ c136a86f-fe28-440d-b6a3-e2fa22340537
+begin
+	#qqb = algebraic_closure(QQ)
+	arr = [ sqrt(qqb(2)), sqrt(qqb(13) + sqrt(qqb(13)) ) ]
+	numarr, m = to_combined_numberfield( arr, simplify_field = true )
+end
+
+# ╔═╡ a46a09bd-48a4-4f4f-b94e-f6904b15e841
+m(numarr[2])
+>>>>>>> Stashed changes
+
+# ╔═╡ 071269d5-9701-4fa4-b4fa-cb7c4dc2120c
+emb( numch[1,1] )
+
+# ╔═╡ b775919c-11bf-4d60-bcb1-14994c3513fb
+ch[1,1]
 
 # ╔═╡ 1c6e0524-0b46-4a59-b4a9-8fd15936045d
 function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb ) 
@@ -103,72 +116,25 @@ function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb )
 	# Check parrent field of all fields are equal
 	is_constant_array( parent.( arr ) ) || error("Elements of array should belong to same field")
 
-	qqb = algebraic_closure(QQ)
-	K   = parent( arr[1] )
-	C   = ray_class_field( K ) 
-	deg = C |> conductor |> first |> minimum |> Int
-	L,  = cyclotomic_field( deg )
-
-	gen_K_as_cyclo = first( roots( L, defining_polynomial(K) ) )
-	to_cyclo       = hom( K, L, gen_K_as_cyclo )
-
-	for j in 1:deg
-		emb_cyclo = hom( L, qqb, roots( qqb, defining_polynomial(L) )[j] )
-
-		if emb_cyclo(gen_K_as_cyclo) == emb(gen(K)) 	
-			return ( to_cyclo.(arr), emb_cyclo )
-		else
-			continue
-		end
-	end
-
-	error("Couldn't find embedding from cyclotomics into algebraic_closure(QQ)")
+	𝕂  = parent( arr[1] )
+	C  = ray_class_field(simplify(𝕂)[1]) 
+	𝕃, = C |> conductor |> first |> minimum |> Int |> cyclotomic_field
+		
+	i  = 
+		hom( 
+			𝕂, 
+			𝕃, 
+			first( roots( 𝕃, defining_polynomial(𝕂)/leading_coefficient(defining_polynomial(𝕂)) ) )
+		)
+	
+	return ( i.(arr), ( emb, i ) )
 end
 
 # ╔═╡ 66779bbe-4aa9-4e5a-a99c-0b9c80f923b1
-(cmat, newemb ) = to_cyclotomic_field( numch, emb )
+to_cyclotomic_field( numch, emb )
 
-# ╔═╡ c136a86f-fe28-440d-b6a3-e2fa22340537
-newemb(cmat[1,1])
-
-# ╔═╡ cb5fa5fc-3d03-4814-95fe-3a8362e3714b
-function frl(i::Int) 
-  js = JSON.parsefile("/home/gert/Tests/JSONExport/ring_"*string(i)*".json")
-  fc = [ js["formal_code"][i] for i in 1:4 ]
-  r = fc[1]
-  mt = zeros(Int, r, r, r)
-  for i in 1:r, j in 1:r, k in 1:r 
-      mt[i,j,k] = Int.(js["mt"][i][j][k])
-  end
-  FusionRings.fusion_ring( mt, formal_code = fc)
-end
-
-# ╔═╡ 4df96601-dd1c-46c7-a6f9-b7c7ea0f796d
-@time FRL = [ frl(i) for i in 1:28451 ];
-
-# ╔═╡ e45d89f4-f033-4d9d-8930-02b58606873e
-function cyclotomic_characters( r )
-	mat, emb = to_combined_numberfield(characters(r),simplify_field=true)
-	to_cyclotomic_field( mat, emb )
-end
-
-# ╔═╡ bcfbf7d9-8e6d-4374-97cc-b633d21e99f3
-cyclotomic_characters( FRL[60] )
-
-# ╔═╡ 7ada188e-8f1b-4f48-887a-24d442b44bae
-function is_character_table( mat, ring )
-	mt   = FusionRings.multiplication_table( ring )
-	r    = FusionRings.rank(ring)
-	mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
-	qqbmat = matrix(qqb,mat)
-	all( is_diagonal( qqbmat * m * inv(qqbmat) ) for m in mats )
-end
-
-# ╔═╡ 2d412afb-a34c-4942-94bd-8d2d3a3cf2a6
-begin
-	testchars, testemb = cyclotomic_characters( FRL[62] )
-	is_character_table(testemb.(testchars),FRL[62])
-end
+# ╔═╡ 14cf6184-8740-4e4f-8933-7e117f32d52e
+methods(hom)
 
 # ╔═╡ Cell order:
 # ╟─95eeb20c-3efd-4285-b6a3-8d8d37aaee05
@@ -186,13 +152,9 @@ end
 # ╠═b25af0b1-010b-4a9d-8698-dab097f90ed7
 # ╠═42dd1286-4197-442d-93f6-0a66b8de2dc6
 # ╠═6971f1d5-a26b-4a47-98a9-8bcf24ec8e12
-# ╠═319f77ac-06ac-47fb-bc5f-2ced396612d6
+# ╠═a46a09bd-48a4-4f4f-b94e-f6904b15e841
+# ╠═071269d5-9701-4fa4-b4fa-cb7c4dc2120c
+# ╠═b775919c-11bf-4d60-bcb1-14994c3513fb
 # ╠═1c6e0524-0b46-4a59-b4a9-8fd15936045d
 # ╠═66779bbe-4aa9-4e5a-a99c-0b9c80f923b1
-# ╠═c136a86f-fe28-440d-b6a3-e2fa22340537
-# ╠═cb5fa5fc-3d03-4814-95fe-3a8362e3714b
-# ╠═4df96601-dd1c-46c7-a6f9-b7c7ea0f796d
-# ╠═e45d89f4-f033-4d9d-8930-02b58606873e
-# ╠═bcfbf7d9-8e6d-4374-97cc-b633d21e99f3
-# ╠═7ada188e-8f1b-4f48-887a-24d442b44bae
-# ╠═2d412afb-a34c-4942-94bd-8d2d3a3cf2a6
+# ╠═14cf6184-8740-4e4f-8933-7e117f32d52e
