@@ -97,13 +97,21 @@ function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb )
 	qqb = algebraic_closure(QQ)
 	K   = parent( arr[1] )
 	C   = ray_class_field( K ) 
-	L,  = C |> conductor |> first |> minimum |> Int |> cyclotomic_field
-		
-	i  = 
-		hom( K, L, roots( L, defining_polynomial(K) ) |> first )
-	
-	emb_inv_i = 
-		hom( L, qqb, emb( preimage( i, gen(L) ) ) )
-	
-	return ( i.(arr), emb_inv_i )
+	deg = C |> conductor |> first |> minimum |> Int
+	L,  = cyclotomic_field( deg )
+
+	gen_K_as_cyclo = first( roots( L, defining_polynomial(K) ) )
+	to_cyclo       = hom( K, L, gen_K_as_cyclo )
+
+	for j in 1:deg
+		emb_cyclo = hom( L, qqb, roots( qqb, defining_polynomial(L) )[j] )
+
+		if emb_cyclo(gen_K_as_cyclo) == emb(gen(K)) 	
+			return ( to_cyclo.(arr), emb_cyclo )
+		else
+			continue
+		end
+	end
+
+	error("Couldn't find embedding from cyclotomics into algebraic_closure(QQ)")
 end
