@@ -2,11 +2,11 @@ include("GeneralFunctions.jl")
 
 struct FusionRing
     multiplication_table::Array{Int,3}
-    names::Vector{String}
-    texnames::Vector{String}
-    labels::Vector{String}
+    names
+    texnames
+    labels
     barcode
-    formal_code::Vector{Int}
+    formal_code
     tensor_product_decompositions
     sub_fusion_rings
     frobenius_perron_dimensions
