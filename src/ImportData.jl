@@ -1,5 +1,7 @@
 # Just some test code 
 
+export frl
+
 function frl(i::Int) 
   js = JSON.parsefile("/home/gert/Tests/JSONExport/ring_"*string(i)*".json")
   fc = [ js["formal_code"][i] for i in 1:4 ]
