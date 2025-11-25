@@ -278,16 +278,16 @@ function characters(ring::FusionRing)
     r    = FusionRings.rank(ring)
     mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
 
-    function is_character_table( mat, mats )
+    function is_diagonalizing_matrix( mat, mats )
       all( is_diagonal( mat * m * inv(mat) ) for m in mats )
     end
     
-    charsq = false
+    diagq = false
     upi = 9
     upj = 9
     
     proposedchars = mats[1]
-    while !charsq
+    while !diagq
       upi += 1
       upj += 1
       # Take random linear rational combination of fusion mats
@@ -300,25 +300,36 @@ function characters(ring::FusionRing)
 
       # Find diagonalizing matrix
       proposedchars = generalized_jordan_form( combinedmat )[2]
-      charsq = is_character_table( proposedchars, mats )
+      diagq = is_diagonalizing_matrix( proposedchars, mats )
     end
-    # TODO: Normalize matrix and set up some convention for order of characters
-    [ proposedchars[i,j] for i in 1:r, j in 1:r ]
+
+    normalize( mat ) = mat./mat[:,1]
+    sort_mat( mat )  = sortslices( mat, dims = 1, by = char_sort_crit )
+
+    sort_mat( normalize( [ proposedchars[i,j] for i in 1:r, j in 1:r ] ) )
   end 
 end
 
-function is_character_table( mat, ring::FusionRing )
+# Sort criterion for characters
+function char_sort_crit( v )
+	RR = ArbField(64);
+	CC = AcbField(64);
+	conv(x) = convert(Float64,x)
+	# Abs values of elements of v
+	absval(vec) = conv.( RR.(abs2.(vec)) )
+	# Angles of elements of v
+	angl(vec) = conv.( real.( log.( CC.( vec) ) ./ CC( 2 * pi * im ) ) )
+			
+	( Int( all(isreal.(v)) ), absval(v), angl(v) )
+end
+
+function is_diagonalizing_matrix( mat, ring::FusionRing )
 	mt   = FusionRings.multiplication_table( ring )
 	r    = FusionRings.rank(ring)
 	mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
+  mat  = matrix( qqb, mat )
 
   all( is_diagonal( mat * m * inv(mat) ) for m in mats )
-end
-
-function to_canonical_character_tab()
-end
-
-function normalize_characters()
 end
 
 
