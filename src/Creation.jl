@@ -1,12 +1,13 @@
 include("GeneralFunctions.jl")
+include("Properties.jl")
 
 struct FusionRing
     multiplication_table::Array{Int,3}
-    names
-    texnames
-    labels
+    names::Array{String,1}
+    texnames::Array{String,1}
+    labels::Array{String,1}
     barcode
-    formal_code
+    formal_code::Array{Int,1}
     tensor_product_decompositions
     sub_fusion_rings
     frobenius_perron_dimensions
@@ -55,11 +56,11 @@ check_labels(mt, names) = length(names) == size(mt, 1)
 
 function fusion_ring(
     mt; 
-    names                               = missing, 
-    texnames                            = missing, 
-    labels                              = missing,
+    names                               = [], 
+    texnames                            = [], 
+    labels                              = [],
     barcode                             = missing, 
-    formal_code                         = missing,
+    formal_code                         = [],
     tensor_product_decompositions       = missing, 
     sub_fusion_rings                    = missing,
     frobenius_perron_dimensions         = missing, 
@@ -77,11 +78,11 @@ function fusion_ring(
         check_unit(mt)             || error("First basis element must act as unit object")
         check_inverse(mt)          || error("Each simple object must have a unique inverse")
         check_associativity(mt)    || error("Structure constants violate associativity")
-        (labels === missing || check_labels(mt, labels)) ||
+        (labels == [] || check_labels(mt, labels)) ||
             error("labels length ≠ rank")
     end
 
-    labels === missing && (labels = [bold_integer(i) for i in 1:size(mt, 1)])
+    labels == [] && (labels = [bold_integer(i) for i in 1:size(mt, 1)])
 
     FusionRing(
         Int.(mt), 
@@ -104,10 +105,10 @@ end
 # Formatting of fusion rings 
 function Base.show( io::IO, ring::FusionRing ) 
     p(str) = print( io, str );
-    if !ismissing(ring.names)
+    if ring.names != []
         p( "FR(" * names(ring)[1] * ")" )
-    elseif !ismissing(ring.formal_code)
-        p( "FR(" * string(anyonwiki_code(ring))[2:end-1] * ")" )
+    elseif ring.formal_code != []
+        p( "FR(" * string(ring.formal_code)[2:end-1] * ")" )
     else
         props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
         p( "FR(" * join( props, ", "  ) * ")" )
