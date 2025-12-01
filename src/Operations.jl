@@ -1,11 +1,4 @@
 
-module Operations
-
-using Combinatorics          # for permutation generation (≤ 8 elements)
-using ..FusionRings          
-
-include("Creation.jl")
-
 """permute_mult_tab(mt, perm) – return a copy of the 3‑tensor `mt` with indices
     relabelled by `perm`."""
 function permute_mult_tab(mt::Array{Int,3}, perm::Vector{Int})
@@ -213,5 +206,3 @@ end
 export permute, permute_mult_tab, sort, perm_vec_qd, perm_vec_sd_conj,
        tensor_product, ⊗, which_permutation,
        register_known_ring!, known_rings, replace_by_known
-
-end 
