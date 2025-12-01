@@ -11,7 +11,7 @@ end
 
 export fusion_ring_list
 
-fusion_ring_list =  [ frl(i) for i in 1:28451 ]
+fusion_ring_list =  [ import_ring(i) for i in 1:28451 ]
 
 export frl
 
