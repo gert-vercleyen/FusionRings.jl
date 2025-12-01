@@ -1,8 +1,4 @@
-# Just some test code 
-
-export frl
-
-function frl(i::Int) 
+function import_ring(i::Int) 
   js = JSON.parsefile("/home/gert/Tests/JSONExport/ring_"*string(i)*".json")
   fc = [ js["formal_code"][i] for i in 1:4 ]
   r = fc[1]
@@ -12,3 +8,11 @@ function frl(i::Int)
   end
   FusionRings.fusion_ring( mt, formal_code = fc)
 end
+
+export fusion_ring_list
+
+fusion_ring_list =  [ frl(i) for i in 1:28451 ]
+
+export frl
+
+frl = fusion_ring_list
