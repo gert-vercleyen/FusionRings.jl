@@ -46,28 +46,7 @@ function comap( arr, arg )
   [ f(arg) for f in arr ]
 end
 
-export to_numberfield
-
-function to_composite_field( 
-    arr::Array{QQBarFieldElem}; 
-    simplify_field = true, 
-    canonical_simplification = true
-    )
-
-  # we don't store the field since its available in 
-  # the parent field of each number. The field is Abstract
-  # so we do need to return the embedding
-  f = number_field( QQ, unique( arr ) )[2]
-   
-  if simplify_field 
-    g = simplify( numfield; canonical = canonical_simplification )[2]
-    to_field_elem = x -> preimage( g, preimage( f, x ) )
-    return ( to_field_elem.(arr), ( g, f ) ) #TODO: this should be the composition
-  else 
-    to_field_elem = x ->  preimage( f, x )
-    return ( to_field_elem.(arr), f )
-  end
-end
+export to_composite_field
 
 function to_composite_field( 
   arr::Array{QQBarFieldElem}; 
