@@ -63,7 +63,7 @@ end
 export tex_names
 
 function tex_names(r::FusionRing)::Array{String,1}
-  return r.labels
+  return r.texnames
 end
 
 export labels
@@ -303,10 +303,10 @@ function characters(ring::FusionRing)
       diagq = is_diagonalizing_matrix( proposedchars, mats )
     end
 
-    normalize( mat ) = mat./mat[:,1]
+    
     sort_mat( mat )  = sortslices( mat, dims = 1, by = char_sort_crit )
 
-    sort_mat( normalize( [ proposedchars[i,j] for i in 1:r, j in 1:r ] ) )
+    sort_mat( normalize_first_col( [ proposedchars[i,j] for i in 1:r, j in 1:r ] ) )
   end 
 end
 
@@ -323,6 +323,8 @@ function char_sort_crit( v )
 	( Int( all(isreal.(v)) ), absval(v), angl(v) )
 end
 
+normalize_first_col( mat ) = mat./mat[:,1]
+
 function is_diagonalizing_matrix( mat, ring::FusionRing )
 	mt   = FusionRings.multiplication_table( ring )
 	r    = FusionRings.rank(ring)
@@ -332,8 +334,7 @@ function is_diagonalizing_matrix( mat, ring::FusionRing )
   all( is_diagonal( mat * m * inv(mat) ) for m in mats )
 end
 
-
-
+export numeric_characters
 """
     numeric_characters(R::FusionRing; tries=8, tol=1e-10) -> (C, V)
 
@@ -383,13 +384,8 @@ function numeric_characters(R::FusionRing; tries::Int=8, tol::Real=1e-10)
             end
             diags[i] = ComplexF64.(diag(D))
         end
-        if ok
-            C = zeros(ComplexF64, r, r)
-            @inbounds for i in 1:r
-                C[:, i] = diags[i]
-            end
-            return C, V
-        end
+
+        ok && return normalize_first_col(V)
     end
 
     error("fusion_ring_characters: failed to find a common eigenbasis. Increase `tries` or check commutativity.")
