@@ -299,7 +299,13 @@ function characters(ring::FusionRing)
       end
 
       # Find diagonalizing matrix
-      proposedchars = generalized_jordan_form( combinedmat )[2]
+      proposedchars = 
+        reduce( 
+          vcat,
+          (collect ∘ values ∘ eigenspaces)( combinedmat )
+        )
+      
+      # generalized_jordan_form( combinedmat )[2] # slow method
       diagq = is_diagonalizing_matrix( proposedchars, mats )
     end
 
