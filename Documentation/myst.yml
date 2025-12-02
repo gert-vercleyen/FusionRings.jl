@@ -1,0 +1,19 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: 72ccf607-f5dc-444a-826b-a4145f46bf70
+  title: FusionRings.jl documentation
+  description: Documentation for the FusionRings.jl package
+  keywords: 
+    - Fusion Rings 
+    - Jupyter-book
+  authors: 
+    - Gert Vercleyen
+    - Sami Nasser Zagha
+  github: https://github.com/gert-vercleyen/FusionRings.jl
+  # To autogenerate a Table of Contents, run "jupyter book init --write-toc"
+site:
+  template: book-theme
+  # options:
+  #   favicon: favicon.ico
+  #   logo: site_logo.png
