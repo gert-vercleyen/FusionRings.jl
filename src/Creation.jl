@@ -1,5 +1,4 @@
-include("GeneralFunctions.jl")
-include("Properties.jl")
+export FusionRing
 
 struct FusionRing
     multiplication_table::Array{Int,3}

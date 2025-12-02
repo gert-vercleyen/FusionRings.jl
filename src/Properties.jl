@@ -1,7 +1,6 @@
+#function change_fusion_ring_property(r::FusionRing, dict)
 
-function change_fusion_ring_property(r::FusionRing, dict)::FusionRing
-
-end
+#end
 
 export multiplication_table
 

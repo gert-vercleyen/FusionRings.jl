@@ -1,3 +1,7 @@
+export permute, permute_mult_tab, sort, perm_vec_qd, perm_vec_sd_conj,
+       tensor_product, ⊗, which_permutation,
+       register_known_ring!, known_rings, replace_by_known
+
 
 """permute_mult_tab(mt, perm) – return a copy of the 3‑tensor `mt` with indices
     relabelled by `perm`."""
@@ -202,7 +206,3 @@ function replace_by_known(r::FusionRing)
     end
     return (r, nothing)
 end
-
-export permute, permute_mult_tab, sort, perm_vec_qd, perm_vec_sd_conj,
-       tensor_product, ⊗, which_permutation,
-       register_known_ring!, known_rings, replace_by_known
