@@ -2,7 +2,7 @@
 module FusionRings
 
 using Oscar
-import Oscar: multiplication_table
+import Oscar: multiplication_table, is_commutative
 using Combinatorics
 using JSON
 
