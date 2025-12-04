@@ -271,6 +271,8 @@ function characters(ring::FusionRing)
     return ring.characters
   elseif !FusionRings.is_commutative(ring) 
     error("Calculation of characters for non-commutative fusion ring is not implemented yet.")
+  elseif rank(ring) == 1
+    return [ qqbar(1) ]
   else
     qqb  = algebraic_closure(QQ) 
     mt   = FusionRings.multiplication_table( ring )
@@ -282,19 +284,19 @@ function characters(ring::FusionRing)
     end
     
     diagq = false
-    upi = 9
-    upj = 9
+    upi = 4
+    upj = 4
     
     proposedchars = mats[1]
     while !diagq
       upi += 1
       upj += 1
       # Take random linear rational combination of fusion mats
-      rvec = rand( [ i//j for i ∈ 1:upi, j ∈ 1:upj ], r )
+      rvec = rand( unique( [ i//j for i ∈ 1:upi, j ∈ 1:upj ] ), r - 1 )
       sgnvec = rand( [ -1 1 ], r )
-      combinedmat = sgnvec[1] * rvec[1] * mats[1]
-      for i ∈ 2:r
-        combinedmat += sgnvec[i] * rvec[i] * mats[i]
+      combinedmat = sgnvec[1] * rvec[1] * mats[2]
+      for i ∈ 3:r
+        combinedmat += sgnvec[i-1] * rvec[i-1] * mats[i]
       end
 
       # Find diagonalizing matrix
