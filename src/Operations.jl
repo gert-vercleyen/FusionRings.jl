@@ -50,6 +50,9 @@ function decompose_all(fr::FusionRing, a::Int)
 end
 
 
+#check this out - replace tensor product with multipication, dir_Sum with sum
+#no nlonger use names - should be labels
+#labels should be printed as bold integers
 """
 Pretty prints the multiplication table as strings (no mutation).
 """
