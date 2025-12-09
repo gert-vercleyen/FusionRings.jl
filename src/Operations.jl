@@ -31,6 +31,8 @@ function fusion_product(fr::FusionRing, a::Int, b::Int)
     out
 end
 
+
+#check this out - points to properties.jl -> tensor product
 const tensor_product = fusion_product
 
 "Return vector of simple indices with positive multiplicity in `a ⊗ b`."

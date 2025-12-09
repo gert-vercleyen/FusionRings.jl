@@ -36,7 +36,7 @@ function row_to_string(r::FusionRing, row)::String
   )
 end
 
-
+#check this out
 function tensor_product(fr::FusionRing, a, b)
     imap = indexmap(fr)
     normalize(x) = x isa Integer ? x : imap[String(x)]
