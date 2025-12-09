@@ -125,6 +125,7 @@ function permute(fr::FusionRing, p::Vector{Int})
 end
 
 """
+#might return false positives - only checks in 1direction
     is_equivalent(r1, r2) -> Bool
 
 Check graded ring isomorphism by brute force for rank ≤ 8,
