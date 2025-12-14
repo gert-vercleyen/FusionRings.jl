@@ -317,6 +317,46 @@ function characters(ring::FusionRing)
   end 
 end
 
+
+function diagonalizing_matrix( mats )
+  qqbmats = [ matrix( algebraic_closure(QQ), m ) for m in mats ]
+
+  function is_diagonalizing_matrix( mat, mats )
+    all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+  end
+
+  proposed_mat = qqbmats[1]
+
+  r = first( size( first( mats ) ) )
+    
+  diagq = false; upi = 4; upj = 4
+
+  while !diagq
+    upi += 1
+    upj += 1
+
+    # Take random linear rational combination of matrices in mats
+    rvec    = rand( unique( [ i//j for i ∈ 1:upi, j ∈ 1:upj ] ), r - 1 )
+    sgnvec  = rand( [ -1 1 ], r )
+    combinedmat = sgnvec[1] * rvec[1] * qqbmats[1]
+    for i ∈ 2:r
+      combinedmat += sgnvec[i] * rvec[i] * qqbmats[i]
+    end
+
+    # Find diagonalizing matrix
+    proposed_mat = 
+      reduce( 
+        vcat,
+        (collect ∘ values ∘ eigenspaces)( combinedmat )
+      )
+
+    # Check whether it works
+    diagq = is_diagonalizing_matrix( proposed_mat, qqbmats )
+  end
+
+  return proposed_mat 
+end
+
 # Sort criterion for characters
 function char_sort_crit( v )
 	RR = ArbField(64);
@@ -341,7 +381,10 @@ function is_diagonalizing_matrix( mat, ring::FusionRing )
   all( is_diagonal( mat * m * inv(mat) ) for m in mats )
 end
 
-export numeric_characters
+#export numeric_characters
+# There are some issues with the numeric characters function. 
+# Mainly the fact that the rows aren't sorted according to some 
+# criterion
 """
     numeric_characters(R::FusionRing; tries=8, tol=1e-10) -> (C, V)
 
@@ -398,9 +441,9 @@ function numeric_characters(R::FusionRing; tries::Int=8, tol::Real=1e-10)
     error("fusion_ring_characters: failed to find a common eigenbasis. Increase `tries` or check commutativity.")
 end
 
-export modular_data
+export sl_2_ZZ_reps
 
-function modular_data(r::FusionRing)
+function sl_2_ZZ_reps(r::FusionRing)
   return r.modular_data
 end
 
