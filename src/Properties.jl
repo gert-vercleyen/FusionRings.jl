@@ -1,7 +1,6 @@
+#function change_fusion_ring_property(r::FusionRing, dict)
 
-function change_fusion_ring_property(r::FusionRing, dict)::FusionRing
-
-end
+#end
 
 export multiplication_table
 
@@ -26,7 +25,7 @@ export row_to_string
 
 function row_to_string(r::FusionRing, row)::String
   n             = length(row)
-  el_names      = element_names(r)
+  el_names      = labels(r)
   non_zero_ind  = findall(i -> row[i] > 0, 1:n)
   to_string(i)  = element_to_string(row[i], el_names[i])
 
@@ -81,10 +80,10 @@ function tex_names(r::FusionRing)::Array{String,1}
   return r.texnames
 end
 
-export element_names
+export labels
 
-function element_names(r::FusionRing)::Array{String,1}
-  return r.element_names
+function labels(r::FusionRing)::Array{String,1}
+  return r.labels
 end
 
 export conjugation_matrix
@@ -282,60 +281,184 @@ end
 
 export characters 
 
-# TODO: Should not be done for non-commutative rings!!!
 function characters(ring::FusionRing)
   if !(ring.characters === missing)
     return ring.characters
   elseif !FusionRings.is_commutative(ring) 
     error("Calculation of characters for non-commutative fusion ring is not implemented yet.")
+  elseif rank(ring) == 1
+    return [ qqbar(1) ]
   else
     qqb  = algebraic_closure(QQ) 
     mt   = FusionRings.multiplication_table( ring )
     r    = FusionRings.rank(ring)
     mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
 
-    function is_character_table( mat, mats )
+    function is_diagonalizing_matrix( mat, mats )
       all( is_diagonal( mat * m * inv(mat) ) for m in mats )
     end
     
-    charsq = false
-    upi = 9
-    upj = 9
+    diagq = false
+    upi = 4
+    upj = 4
     
     proposedchars = mats[1]
-    while !charsq
+    while !diagq
       upi += 1
       upj += 1
       # Take random linear rational combination of fusion mats
-      rvec 		= rand( [ i//j for i ∈ 1:upi, j ∈ 1:upj ], r )
-      combinedmat = rvec[1] * mats[1]
-      for i ∈ 2:r
-        combinedmat += rvec[i] * mats[i]
+      rvec = rand( unique( [ i//j for i ∈ 1:upi, j ∈ 1:upj ] ), r - 1 )
+      sgnvec = rand( [ -1 1 ], r )
+      combinedmat = sgnvec[1] * rvec[1] * mats[2]
+      for i ∈ 3:r
+        combinedmat += sgnvec[i-1] * rvec[i-1] * mats[i]
       end
 
       # Find diagonalizing matrix
-      proposedchars = generalized_jordan_form( combinedmat )[2]
-      charsq = is_character_table( proposedchars, mats )
+      proposedchars = 
+        reduce( 
+          vcat,
+          (collect ∘ values ∘ eigenspaces)( combinedmat )
+        )
+      
+      # generalized_jordan_form( combinedmat )[2] # slow method
+      diagq = is_diagonalizing_matrix( proposedchars, mats )
     end
-    proposedchars
+
+    
+    sort_mat( mat )  = sortslices( mat, dims = 1, by = char_sort_crit )
+
+    sort_mat( normalize_first_col( [ proposedchars[i,j] for i in 1:r, j in 1:r ] ) )
   end 
 end
 
-function is_character_table( mat, mats )
-  all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+
+function diagonalizing_matrix( mats )
+  qqbmats = [ matrix( algebraic_closure(QQ), m ) for m in mats ]
+
+  function is_diagonalizing_matrix( mat, mats )
+    all( is_diagonal( mat * m * inv(mat) ) for m in mats )
+  end
+
+  proposed_mat = qqbmats[1]
+
+  r = first( size( first( mats ) ) )
+    
+  diagq = false; upi = 4; upj = 4
+
+  while !diagq
+    upi += 1
+    upj += 1
+
+    # Take random linear rational combination of matrices in mats
+    rvec    = rand( unique( [ i//j for i ∈ 1:upi, j ∈ 1:upj ] ), r - 1 )
+    sgnvec  = rand( [ -1 1 ], r )
+    combinedmat = sgnvec[1] * rvec[1] * qqbmats[1]
+    for i ∈ 2:r
+      combinedmat += sgnvec[i] * rvec[i] * qqbmats[i]
+    end
+
+    # Find diagonalizing matrix
+    proposed_mat = 
+      reduce( 
+        vcat,
+        (collect ∘ values ∘ eigenspaces)( combinedmat )
+      )
+
+    # Check whether it works
+    diagq = is_diagonalizing_matrix( proposed_mat, qqbmats )
+  end
+
+  return proposed_mat 
 end
 
-function is_character_table( mat, ring )
+# Sort criterion for characters
+function char_sort_crit( v )
+	RR = ArbField(64);
+	CC = AcbField(64);
+	conv(x) = convert(Float64,x)
+	# Abs values of elements of v
+	absval(vec) = conv.( RR.(abs2.(vec)) )
+	# Angles of elements of v
+	angl(vec) = conv.( real.( log.( CC.( vec) ) ./ CC( 2 * pi * im ) ) )
+			
+	( Int( all(isreal.(v)) ), absval(v), angl(v) )
+end
+
+normalize_first_col( mat ) = mat./mat[:,1]
+
+function is_diagonalizing_matrix( mat, ring::FusionRing )
 	mt   = FusionRings.multiplication_table( ring )
 	r    = FusionRings.rank(ring)
 	mats = [ matrix( qqb, mt[ i, :, : ] ) for i ∈ 1:r ]
+  mat  = matrix( qqb, mat )
 
   all( is_diagonal( mat * m * inv(mat) ) for m in mats )
 end
 
-export modular_data
+#export numeric_characters
+# There are some issues with the numeric characters function. 
+# Mainly the fact that the rows aren't sorted according to some 
+# criterion
+"""
+    numeric_characters(R::FusionRing; tries=8, tol=1e-10) -> (C, V)
 
-function modular_data(r::FusionRing)
+Return the **character table** `C::Matrix{ComplexF64}` of a **commutative** fusion ring `R`,
+together with a matrix `V` whose columns are a common eigenbasis for the fusion matrices.
+
+By definition here, `C[j,i]` is the eigenvalue of `N_i` on the `j`-th common eigenline
+(i.e. character `χ_j` evaluated on basis element `i`).
+
+Algorithm:
+1. Form a random real combination `M = ∑_k c_k N_k`.
+2. Eigen-decompose `M = V Λ V⁻¹`.
+3. Verify that every `V⁻¹ N_i V` is (numerically) diagonal. If not, retry.
+
+Throws if no common eigenbasis is found after `tries` attempts.
+"""
+function numeric_characters(R::FusionRing; tries::Int=8, tol::Real=1e-10)
+    labs = labels(R)
+    r = length(labs)
+    Nis = [Matrix{Float64}(fusion_matrix(R, a)) for a in labs]
+
+    # quick commutativity sanity check
+    if !FusionRings.is_commutative(R) 
+        error("fusion_ring_characters: ring appears non-commutative; this routine requires commuting fusion matrices.")
+    end
+
+    for _ in 1:tries
+        coeffs = randn(r)
+        M = zeros(Float64, r, r)
+        @inbounds for k in 1:r
+            M .+= coeffs[k] .* Nis[k]
+        end
+
+        ev = eigen(M)                    # symmetric not guaranteed; generic eigen
+        V  = Matrix(ev.vectors)
+        Vinv = inv(V)                    # small r; explicit inverse is fine here
+
+        # Check diagonalisation
+        diags = Vector{Vector{ComplexF64}}(undef, r)
+        ok = true
+        for i in 1:r
+            D = Vinv * Nis[i] * V
+            off = copy(D); @inbounds for j in 1:r; off[j,j] = 0.0; end
+            if norm(off) > tol
+                ok = false
+                break
+            end
+            diags[i] = ComplexF64.(diag(D))
+        end
+
+        ok && return normalize_first_col(V)
+    end
+
+    error("fusion_ring_characters: failed to find a common eigenbasis. Increase `tries` or check commutativity.")
+end
+
+export sl_2_ZZ_reps
+
+function sl_2_ZZ_reps(r::FusionRing)
   return r.modular_data
 end
 

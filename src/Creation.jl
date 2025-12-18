@@ -1,14 +1,12 @@
-include("GeneralFunctions.jl")
-
-using LinearAlgebra   # for `I`
+export FusionRing
 
 struct FusionRing
-    multiplication_table::Array{Int64,3}
-    names
-    texnames
-    element_names::Vector{String}
+    multiplication_table::Array{Int,3}
+    names::Array{String,1}
+    texnames::Array{String,1}
+    labels::Array{String,1}
     barcode
-    formal_code
+    formal_code::Array{Int,1}
     tensor_product_decompositions
     sub_fusion_rings
     frobenius_perron_dimensions
@@ -28,7 +26,17 @@ function check_mt_dims(mt)
     length(dims) == 3 && is_constant_array(dims)
 end
 
-check_unit(mt) = mt[1, :, :] == mt[:, 1, :] == I
+function check_unit(mt)
+    r = size(mt)[1]
+    δ(i,j) = i == j ? 1 : 0
+    for i in 1:r, j in 1:r
+        if !(mt[1, i, j] == mt[i, 1, j] == δ(i,j))
+            return false
+        end
+        continue
+    end
+    return true
+end
 
 check_inverse(mt) = sum(mt[:, :, 1]) == size(mt, 1)
 
@@ -42,16 +50,16 @@ function check_associativity(mt::Array{Int, 3})
     true
 end
 
-check_element_names(mt, names) = length(names) == size(mt, 1)
+check_labels(mt, names) = length(names) == size(mt, 1)
 
 
 function fusion_ring(
     mt; 
-    names                               = missing, 
-    texnames                            = missing, 
-    element_names                       = missing,
+    names                               = [], 
+    texnames                            = [], 
+    labels                              = [],
     barcode                             = missing, 
-    formal_code                         = missing,
+    formal_code                         = [],
     tensor_product_decompositions       = missing, 
     sub_fusion_rings                    = missing,
     frobenius_perron_dimensions         = missing, 
@@ -69,17 +77,17 @@ function fusion_ring(
         check_unit(mt)             || error("First basis element must act as unit object")
         check_inverse(mt)          || error("Each simple object must have a unique inverse")
         check_associativity(mt)    || error("Structure constants violate associativity")
-        (element_names === missing || check_element_names(mt, element_names)) ||
-            error("element_names length ≠ rank")
+        (labels == [] || check_labels(mt, labels)) ||
+            error("labels length ≠ rank")
     end
 
-    element_names === missing && (element_names = [bold_integer(i) for i in 1:size(mt, 1)])
+    labels == [] && (labels = [bold_integer(i) for i in 1:size(mt, 1)])
 
     FusionRing(
         Int.(mt), 
         names, 
         texnames, 
-        element_names, 
+        labels, 
         barcode, 
         formal_code,
         tensor_product_decompositions, 
@@ -96,10 +104,10 @@ end
 # Formatting of fusion rings 
 function Base.show( io::IO, ring::FusionRing ) 
     p(str) = print( io, str );
-    if !ismissing(ring.names)
+    if ring.names != []
         p( "FR(" * names(ring)[1] * ")" )
-    elseif !ismissing(ring.formal_code)
-        p( "FR(" * string(anyonwiki_code(ring))[2:end-1] * ")" )
+    elseif ring.formal_code != []
+        p( "FR(" * string(ring.formal_code)[2:end-1] * ")" )
     else
         props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
         p( "FR(" * join( props, ", "  ) * ")" )
@@ -113,7 +121,7 @@ export psu2k_fusion_ring, su2k_fusion_ring, son2_fusion_ring, metaplectic_fusion
 range_psu2k(i, j, k) = abs(i - j):2:min(i + j, 2k - i - j)
 
 # TODO: add missing information
-# TODO: code for element_names is a bit too dense
+# TODO: code for labels is a bit too dense
 # PSU(2)_k
 function psu2k_fusion_ring(k::Int)::FusionRing
     rk = div(k, 2) + 1
@@ -133,7 +141,7 @@ function psu2k_fusion_ring(k::Int)::FusionRing
     fusion_ring(
         mt,
         names = ["PSU(2)" * subscript_integer(k)],
-        element_names = elnames
+        labels = elnames
     )
 end
 
@@ -148,7 +156,7 @@ function su2k_fusion_ring(k::Int)::FusionRing
     fusion_ring(
         mt, 
         names = ["SU(2)" * subscript_integer(k)],
-        element_names = string.(0:k)
+        labels = string.(0:k)
     )
 end
 
@@ -163,7 +171,7 @@ function zn_fusion_ring(n::Int)::FusionRing
     fusion_ring(
         mt,
         names = ["Z_" * string(n)],
-        element_names = string.(0:n-1)
+        labels = string.(0:n-1)
     )
 end
 
@@ -217,7 +225,7 @@ function ty_fusion_ring(G::AbstractVector)::FusionRing
     fusion_ring(
         mt,
         names = ["TY(" * join(G, ",") * ")"],
-        element_names = vcat(string.(G), ["m"])
+        labels = vcat(string.(G), ["m"])
     )
 end
 
