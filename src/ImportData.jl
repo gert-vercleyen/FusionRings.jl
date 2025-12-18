@@ -16,3 +16,11 @@ fusion_ring_list =  [ import_ring(i) for i in 1:28451 ]
 export frl
 
 frl = fusion_ring_list
+
+export fusion_ring_dict
+
+fusion_ring_dict = Dict( anyonwiki_code(r) => r for r in frl )
+
+export frd
+
+frd = fusion_ring_dict
