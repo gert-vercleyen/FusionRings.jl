@@ -95,3 +95,16 @@ function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb )
 	error("Couldn't find embedding from cyclotomics into algebraic_closure(QQ)")
 end
 
+# Returns element of v who's value equals x
+# Super inneficient implementation at the moment since
+# we just loop over the list v
+function replace_by_known( v; tol=1e-10 )
+    function (x)
+        CC = AcbField(64);
+    	conv(z) = convert(ComplexF64,z)
+        for y in v
+            abs(conv(x) - conv(CC(y))) < tol && return y
+        end
+        error("No matching value found")
+    end
+end
