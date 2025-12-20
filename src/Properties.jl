@@ -93,17 +93,6 @@ function conjugation_matrix(r::FusionRing)::Array{Int,2}
   return multiplication_table(r)[:,:,1]
 end
 
-export is_commutative
-
-function is_commutative(r::FusionRing)::Bool
-  mt = multiplication_table(r)
-  rk = rank(r)
-  all( 
-    mat -> mat == mat', 
-    [ mt[:,:,i] for i in 1:rk ]
-  )
-end
-
 export multiplicity
 
 function multiplicity(r::FusionRing)::Int
