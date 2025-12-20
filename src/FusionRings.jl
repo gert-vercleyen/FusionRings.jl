@@ -1,4 +1,3 @@
-
 module FusionRings
 
 using Oscar
@@ -9,7 +8,6 @@ using LinearAlgebra:eigen
 
 include("GeneralFunctions.jl")
 include("Creation.jl")
-include("Properties.jl")
 include("Operations.jl")
 include("ImportData.jl")
 end

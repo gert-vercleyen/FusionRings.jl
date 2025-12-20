@@ -3,17 +3,27 @@ export permute, permute_mult_tab, sort, perm_vec_qd, perm_vec_sd_conj,
        register_known_ring!, known_rings, replace_by_known
 
 
-"""permute_mult_tab(mt, perm) – return a copy of the 3‑tensor `mt` with indices
-    relabelled by `perm`."""
-function permute_mult_tab(mt::Array{Int,3}, perm::Vector{Int})
-    n = length(perm)
-    out = similar(mt)
-    @inbounds for a in 1:n, b in 1:n, c in 1:n
-        out[a,b,c] = mt[perm[a], perm[b], perm[c]]
-    end
-    return out
+"Return the fusion matrix (left multiplication by `a`)."
+function fusion_matrix(fr::FusionRing, a::Int)::Matrix{Int}
+    @views multiplication_table(fr)[a, :, :]
 end
 
+"Structure constant N[a,b,c]."
+fusion_coeff(fr::FusionRing, a::Int, b::Int, c::Int)::Int =
+    multiplication_table(fr)[a,b,c]
+
+"""
+    fusion_product(fr, a, b) -> Dict{Int,Int}
+
+Return the decomposition of `a ⊗ b` as a multiplicity dictionary
+`Dict{simple_index => multiplicity}`.
+"""
+function fusion_product(fr::FusionRing, a::Int, b::Int)
+    N = @views multiplication_table(fr)[a,b,:]
+    out = Dict{Int,Int}()
+    @inbounds for (c,m) in enumerate(N)
+        m==0 && continue
+        out[c] = m
 """permute(r, perm) – return a new `FusionRing` with all data
     permuted by `perm`.  `perm[1]` **must** equal 1 to keep the vacuum first."""
 function permute(r::FusionRing, perm::Vector{Int})::FusionRing
@@ -80,16 +90,7 @@ function perm_vec_sd_conj(r::FusionRing; order::Symbol = :increasing)::Vector{In
             push!(paired, i, j)
         end
     end
-
-    return vcat(1, self_dual, conjlist)
-end
-
-
-function sort(r::FusionRing; sortby::String = "fpdims", kwargs...)
-    perm = sortby == "fpdims"      ? perm_vec_qd(r; kwargs...) :
-           sortby == "sd-conj"    ? perm_vec_sd_conj(r; kwargs...) :
-           throw(ArgumentError("unknown sortby keyword: $sortby"))
-    return permute(r, perm)
+    out
 end
 
 
@@ -108,101 +109,121 @@ function tensor_product(r1::FusionRing, r2::FusionRing)::FusionRing
     # Assemble element names
     elnames = [ string(e1, "⊗", e2) for e1 in labels(r1) for e2 in labels(r2) ]
 
-    fp1, fp2 = r1.frobenius_perron_dimensions, r2.frobenius_perron_dimensions
-    fpdims_new = (fp1 === missing || fp2 === missing) ?
-                 missing : vec(kron(fp1, fp2))
+"Return vector of simple indices with positive multiplicity in `a ⊗ b`."
+fusion_outcomes(fr::FusionRing, a::Int, b::Int)::Vector{Int} =
+    [c for (c,m) in fusion_product(fr,a,b) if m>0]
 
-    names = isempty(r1.names) || isempty(r2.names) ? missing : [string(r1.names[1], " × ", r2.names[1])]
+"Ordered list form of `a ⊗ b`."
+decompose(fr::FusionRing, a::Int, b::Int) =
+    [(k,v) for (k,v) in fusion_product(fr,a,b)]
 
     return fusion_ring(mt; names = names, labels = elnames, frobenius_perron_dimensions = fpdims_new)
 end
 
-const ⊗ = tensor_product
 
-
-"""which_permutation(r1, r2; exhaustive_limit = 8) – returns a permutation
-vector σ such that `permute(r1, σ)` is identical to `r2`, or `nothing` if no
-such σ exists.  For ranks ≤ `exhaustive_limit` the search is exhaustive;
-otherwise a heuristic backtracking search is used."""
-function which_permutation(r1::FusionRing, r2::FusionRing; exhaustive_limit::Int = 8)
-    rank(r1) == rank(r2) || return nothing
-    rank(r1) == 1 && return [1]           # trivial ring
-
-    n  = rank(r1)
-    mt2 = multiplication_table(r2)
-
-    # Fast fingerprint: structure‑constant histograms must match
-    if sort(vec(multiplication_table(r1))) != sort(vec(mt2))
-        return nothing
-    end
-
-    # Exhaustive search for small n
-    if n ≤ exhaustive_limit
-        for perm in Combinatorics.permutations(1:n)
-            perm[1] == 1 || continue
-            if permute_mult_tab(multiplication_table(r1), perm) == mt2
-                return collect(perm)
+#check this out - replace tensor product with multipication, dir_Sum with sum
+#no nlonger use names - should be labels
+#labels should be printed as bold integers
+"""
+Pretty prints the multiplication table as strings (no mutation).
+"""
+function print_multiplication_table(fr::FusionRing; include_zeros::Bool=false)
+    N = multiplication_table(fr)
+    names = fr.element_names
+    r = length(names)
+    head = "⊗ │ " * join(names, " │ ")
+    sep  = "──┼" * "───┼"^(r-1) * "──"
+    println(head); println(sep)
+    for i in 1:r
+        rowcells = String[]
+        for j in 1:r
+            d = fusion_product(fr, i, j)
+            if include_zeros
+                parts = String[]
+                for c in 1:r
+                    m = get(d,c,0)
+                    if m==0; push!(parts, "0 "*names[c])
+                    elseif m==1; push!(parts, names[c])
+                    else; push!(parts, string(m," ",names[c]))
+                    end
+                end
+                push!(rowcells, join(parts, " ⊕ "))
+            else
+                isempty(d) && push!(rowcells, "0") && continue
+                push!(rowcells,
+                    join([ m==1 ? names[c] : string(m," ",names[c]) for (c,m) in d ], " ⊕ "))
             end
         end
-        return nothing
+        println(names[i], " │ ", join(rowcells, " │ "))
     end
+    nothing
+end
 
-    # Heuristic search for larger n – start with vacuum fixed, then greedy match
-    perm = ones(Int, n)               # result vector being filled
-    used = falses(n)
-    used[1] = true
-
-    # 1. Match self‑dual particles by FP dimension signature
-    fp     = fpdims(r1)
-    target = fpdims(r2)
-    sd1    = [i for i in 2:n if multiplication_table(r1)[i,i,1] > 0]
-    sd2    = [i for i in 2:n if mt2[i,i,1] > 0]
-    sd_map = Dict{Int,Int}()
-    for i in sd1
-        match = findfirst(j -> isapprox(fp[i], target[j]; atol=1e-8) && !used[j], sd2)
-        match === nothing && return nothing
-        sd_map[i] = sd2[match]
-        used[sd2[match]] = true
+"Pretty one-liner: `a ⊗ b = ...` using printed names; `a,b` are indices."
+function product_string(fr::FusionRing, a::Int, b::Int)
+    rhs = let d = fusion_product(fr,a,b), names = fr.element_names
+        isempty(d) ? "0" :
+            join([ m==1 ? names[c] : string(m," ",names[c]) for (c,m) in d ], " ⊕ ")
     end
+    string(fr.element_names[a], " ⊗ ", fr.element_names[b], " = ", rhs)
+end
 
-    perm[collect(keys(sd_map))] = collect(values(sd_map))
 
-    # 2. Greedy match remaining particles by their fusion with vacuum and FP‑dim
-    for i in 2:n
-        if perm[i] == 0
-            cand = findfirst(j -> !used[j] && isapprox(fp[i], target[j]; atol=1e-8), 2:n)
-            cand === nothing && return nothing
-            perm[i] = cand
-            used[cand] = true
+"""
+    permute_mult_tab(N, p)
+
+Apply permutation `p` (fixing 1) to all three indices of `N`.
+"""
+function permute_mult_tab(N::Array{Int,3}, p::Vector{Int})
+    p[1]==1 || error("Permutation must fix the unit at index 1")
+    r = size(N,1)
+    M = fill(0, r, r, r)
+    @inbounds for a in 1:r, b in 1:r, c in 1:r
+        M[p[a], p[b], p[c]] = N[a,b,c]
+    end
+    M
+end
+
+"""
+    permute(fr, p) -> FusionRing
+
+Return a *new* ring obtained by permuting simples by `p` (fixing 1).
+"""
+function permute(fr::FusionRing, p::Vector{Int})
+    Np = permute_mult_tab(multiplication_table(fr), p)
+    names = fr.element_names[invperm(p)]
+    FusionRing(Np, names, fr.name*"/perm")
+end
+
+"""
+#might return false positives - only checks in 1direction
+    is_equivalent(r1, r2) -> Bool
+
+Check graded ring isomorphism by brute force for rank ≤ 8,
+else compare a spectral checksum of ∑_a N[a,:,:].
+"""
+function is_equivalent(fr1::FusionRing, fr2::FusionRing)
+    N1 = multiplication_table(fr1); N2 = multiplication_table(fr2)
+    r1 = size(N1,1); r2 = size(N2,1)
+    r1 == r2 || return false
+    r = r1
+    sum(N1) == sum(N2) || return false
+
+    if r ≤ 8
+        using Combinatorics: permutations
+        for p in permutations(2:r)
+            perm = vcat(1, collect(p))
+            permute_mult_tab(N1, perm) == N2 && return true
         end
-    end
-
-    return permute_mult_tab(multiplication_table(r1), perm) == mt2 ? perm : nothing
-end
-
-
-const _KNOWN_RINGS = Dict{Int,Vector{FusionRing}}()   # keyed by barcode
-
-"""register_known_ring!(r) – store `r` in the in‑memory catalogue so that later
-    rings can be matched quickly via `replace_by_known`."""
-function register_known_ring!(r::FusionRing)
-    push!(_KNOWN_RINGS, barcode(r) => get(_KNOWN_RINGS, barcode(r), FusionRing[]))
-    push!(_KNOWN_RINGS[barcode(r)], r)
-    return nothing
-end
-
-known_rings() = _KNOWN_RINGS   # read‑only view
-
-"""replace_by_known(r) – if an equivalent ring exists in `_KNOWN_RINGS`, return
-    that canonical ring plus the permutation used; else return `(r, nothing)`."""
-function replace_by_known(r::FusionRing)
-    br = barcode(r)
-    haskey(_KNOWN_RINGS, br) || return (r, nothing)
-
-    for ref in _KNOWN_RINGS[br]
-        perm = which_permutation(ref, r)
-        perm === nothing && continue
-        return (permute(ref, perm), perm)
+        return false
+    else
+        using LinearAlgebra: eigvals
+        S1 = zeros(Int, r, r); S2 = zeros(Int, r, r)
+        @inbounds for a in 1:r
+            @views S1 .+= N1[a,:,:]
+            @views S2 .+= N2[a,:,:]
+        end
+        sort(eigvals(Matrix(S1))) == sort(eigvals(Matrix(S2)))
     end
     return (r, nothing)
 end

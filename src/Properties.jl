@@ -36,6 +36,21 @@ function row_to_string(r::FusionRing, row)::String
   )
 end
 
+#check this out
+function tensor_product(fr::FusionRing, a, b)
+    imap = indexmap(fr)
+    normalize(x) = x isa Integer ? x : imap[String(x)]
+    ai = normalize(a); bi = normalize(b)
+    N = fusion_tensor(fr)[ai,bi,:]
+    out = Dict{String,Int}()
+    L = labels(fr)
+    for (ci,m) in enumerate(N)
+        m==0 && continue
+        out[L[ci]] = m
+    end
+    out
+end
+
 function element_to_string(mult,elem)::String
   if mult == 0 
     return ""
@@ -478,3 +493,150 @@ end
 function twist_factors(r::FusionRing)
 
 end
+
+
+function numeric_fpdims(fr::FusionRing)
+    r = rank(fr)
+    S = zeros(Float64, r, r)
+    N = fusion_tensor(fr)
+    for a in 1:r
+        @views S .+= N[a, :, :]
+    end
+    vals, vecs = eigen(S)
+    idx = argmax(vals)
+    v = abs.(vecs[:, idx])
+    v ./ v[1]
+end
+
+numeric_fpdim(fr::FusionRing) = sum(x->x*x, numeric_fpdims(fr))
+
+function is_commutative(fr::FusionRing)
+    N = fusion_tensor(fr); r = size(N,1)
+    for a in 1:r, b in 1:r, c in 1:r
+        N[a,b,c] == N[b,a,c] || return false
+    end
+    true
+end
+
+multiplicity(fr::FusionRing) = maximum(fusion_tensor(fr))
+
+function nonzero_structure_constants(fr::FusionRing)
+    N = fusion_tensor(fr); r = size(N,1)
+    out = Tuple{Int,Int,Int}[]
+    for a in 1:r, b in 1:r, c in 1:r
+        N[a,b,c]>0 && push!(out,(a,b,c))
+    end
+    out
+end
+
+function conjugation_matrix(fr::FusionRing)
+    N = fusion_tensor(fr)
+    @views N[:, :, 1]
+end
+
+"""
+    conjugate_element(fr, a) -> Int
+
+Return the integer index of the dual (conjugate) simple object of `a`.
+Accepts an integer index, a `String`, or a `Symbol`.
+
+Rationale: internal computations (e.g. composing with other index-based
+operations) are simpler when the result is an index rather than a label.
+Use `conjugate_label` if you need the string form.
+"""
+function conjugate_element(fr::FusionRing, a)
+    imap = indexmap(fr)
+    ai = a isa Integer ? a : imap[String(a)]
+    C = conjugation_matrix(fr)
+    findfirst(==(1), C[ai, :])::Int
+end
+
+
+function is_group_ring(fr::FusionRing)
+    sum( fusion_tensor(fr) ) == FusionRings.rank(r)^2
+end
+
+function sub_fusion_rings(fr::FusionRing)
+    L = labels(fr); r = length(L)
+    sets = Vector{Vector{String}}()
+    for mask in 1:(1<<(r-1))-1
+        subset = [L[1]]
+        for i in 2:r
+            if ((mask >> (i-2)) & 1) == 1
+                push!(subset, L[i])
+            end
+        end
+        if is_sub_fusion_ring(fr, subset) && length(subset)<r
+            push!(sets, subset)
+        end
+    end
+    sets
+end
+
+function is_sub_fusion_ring(fr::FusionRing, S::Vector)
+    # Accept Vector{String} preferred, but allow symbols via conversion
+    S2 = [s isa Symbol ? String(s) : String(s) for s in S]
+    Sset = Set(S2)
+    all(l -> l in Sset, labels(fr)[1:1]) || return false
+    imap = indexmap(fr)
+    for a in S2, b in S2
+        ai = imap[a]; bi = imap[b]
+        N = fusion_tensor(fr)[ai,bi,:]
+        for (ci,m) in enumerate(N)
+            m==0 && continue
+            c = labels(fr)[ci]
+            c in Sset || return false
+        end
+    end
+    true
+end
+
+
+
+
+# TODO: need to addapt to definition EGNO
+# TODO: not sure whether you need a ⊗ b ⊗ a* ⊗ b*, isn't a ⊗ b* enough?
+"""
+    commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int}) -> FusionRing
+
+Return  commutator subring `[A,B]`, defined as the smallest fusion-closed subring
+containing the support of each product `a ⊗ b ⊗ a* ⊗ b*` with `a ∈ A`, `b ∈ B`.
+
+`A` and `B` are vectors of simple indices (assumed to be subsets of `1:rank(fr)`).
+"""
+function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
+    r = rank(fr)
+    all(1 .≤ A .≤ r) || throw(ArgumentError("commutator: A has out-of-bounds indices"))
+    all(1 .≤ B .≤ r) || throw(ArgumentError("commutator: B has out-of-bounds indices"))
+
+    # Seed S0 with the union of supports of a ⊗ b ⊗ a* ⊗ b*
+    seen = falses(r)
+    @inbounds for a in A
+        aᵗ = _dual_index(fr, a)
+        for b in B
+            bᵗ = _dual_index(fr, b)
+
+            # First multiply a ⊗ b
+            for (u, mu) in tensor_product(fr, a, b)
+                mu == 0 && continue
+                # Then multiply by a* ⊗ b* ; we do it as (u ⊗ a*) ⊗ b*
+                for (v, mv) in tensor_product(fr, u, aᵗ)
+                    mv == 0 && continue
+                    for (w, mw) in tensor_product(fr, v, bᵗ)
+                        mw == 0 && continue
+                        seen[w] = true
+                    end
+                end
+            end
+        end
+    end
+
+    S0 = findall(seen)
+    isempty(S0) && (S0 = [1])  # at minimum, the unit
+
+    # Close under fusion and build the subring
+    S = _fusion_closure(fr, S0)
+    _restrict_subring(fr, S; check_closed=true)
+end
+
+
