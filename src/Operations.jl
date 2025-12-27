@@ -198,10 +198,17 @@ end
 Check graded ring isomorphism by brute force for rank ≤ 8,
 else compare a spectral checksum of ∑_a N[a,:,:].
 """
-function is_equivalent(fr1::FusionRing, fr2::FusionRing)
-    N1 = multiplication_table(fr1); N2 = multiplication_table(fr2)
-    r1 = size(N1,1); r2 = size(N2,1)
-    r1 == r2 || return false
+function is_equivalent( r1::FusionRing, r2::FusionRing )
+    !( which_permutation === missing )
+end
+function which_permutation(fr1::FusionRing, fr2::FusionRing)
+    nsdnsd(fr1) == nsdnsd(fr2) || return missing
+
+    dims1 = fpdims(fr1)
+    dims2 = fpdims(fr2)
+
+    Base.sort(dims1) == Base.sort(dims2) || return missing 
+
     r = r1
     sum(N1) == sum(N2) || return false
 
