@@ -500,7 +500,7 @@ end
 numeric_fpdim(fr::FusionRing) = sum(x->x*x, numeric_fpdims(fr))
 
 function is_commutative(fr::FusionRing)
-    N = multiplication_table(fr);
+    N = multiplication_table(fr)
     r = rank(fr)
     for a in 1:r, b in 1:r, c in 1:r
         N[a,b,c] == N[b,a,c] || return false
