@@ -210,23 +210,23 @@ function which_permutation(fr1::FusionRing, fr2::FusionRing)
     Base.sort(dims1) == Base.sort(dims2) || return missing 
 
     r = r1
-    sum(N1) == sum(N2) || return false
+    sum(N1) == sum(N2) || return missing
 
-    if r ≤ 8
-        using Combinatorics: permutations
-        for p in permutations(2:r)
-            perm = vcat(1, collect(p))
-            permute_mult_tab(N1, perm) == N2 && return true
-        end
-        return false
-    else
-        using LinearAlgebra: eigvals
-        S1 = zeros(Int, r, r); S2 = zeros(Int, r, r)
-        @inbounds for a in 1:r
-            @views S1 .+= N1[a,:,:]
-            @views S2 .+= N2[a,:,:]
-        end
-        sort(eigvals(Matrix(S1))) == sort(eigvals(Matrix(S2)))
-    end
-    return (r, nothing)
+    # if r ≤ 8
+    #     using Combinatorics: permutations
+    #     for p in permutations(2:r)
+    #         perm = vcat(1, collect(p))
+    #         permute_mult_tab(N1, perm) == N2 && return true
+    #     end
+    #     return false
+    # else
+    #     using LinearAlgebra: eigvals
+    #     S1 = zeros(Int, r, r); S2 = zeros(Int, r, r)
+    #     @inbounds for a in 1:r
+    #         @views S1 .+= N1[a,:,:]
+    #         @views S2 .+= N2[a,:,:]
+    #     end
+    #     sort(eigvals(Matrix(S1))) == sort(eigvals(Matrix(S2)))
+    # end
+    # return (r, nothing)
 end
