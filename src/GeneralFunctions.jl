@@ -59,7 +59,7 @@ function to_composite_field(
   if simplify_field 
     L, g = simplify( K; canonical = canonical_simplification )
     to_field_elem  = x -> preimage( g, preimage( f, x ) )
-    fg = hom( L, algebraic_closure(QQ), f(g(gen(L))) )
+    fg = hom( L, algebraic_closure(QQ), (f ∘ g ∘ gen)(L) )
     return ( to_field_elem.(arr), fg )
   else 
     to_field_elem = x -> preimage( f, x )
