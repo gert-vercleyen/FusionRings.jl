@@ -11,6 +11,7 @@ end
 "Structure constant N[a,b,c]."
 function fusion_coeff(fr::FusionRing, a::Int, b::Int, c::Int)::Int
     multiplication_table(fr)[a,b,c]
+end
 
 """
     fusion_product(fr, a, b) -> Dict{Int,Int}
@@ -24,6 +25,11 @@ function fusion_product(fr::FusionRing, a::Int, b::Int)
     @inbounds for (c,m) in enumerate(N)
         m==0 && continue
         out[c] = m
+    end
+    out
+end
+
+
 """permute(r, perm) – return a new `FusionRing` with all data
     permuted by `perm`.  `perm[1]` **must** equal 1 to keep the vacuum first."""
 function permute(r::FusionRing, perm::Vector{Int})::FusionRing
@@ -120,6 +126,7 @@ end
 "Return vector of simple indices with positive multiplicity in `a ⊗ b`."
 function fusion_outcomes(fr::FusionRing, a::Int, b::Int)::Vector{Int}
     [c for (c,m) in fusion_product(fr,a,b) if m>0]
+end
 
 "Ordered list form of `a ⊗ b`."
 function decompose(fr::FusionRing, a::Int, b::Int) 
