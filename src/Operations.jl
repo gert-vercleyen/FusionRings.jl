@@ -192,17 +192,6 @@ function permute_mult_tab(N::Array{Int,3}, p::Vector{Int})
 end
 
 """
-    permute(fr, p) -> FusionRing
-
-Return a *new* ring obtained by permuting simples by `p` (fixing 1).
-"""
-function permute(fr::FusionRing, p::Vector{Int})
-    Np = permute_mult_tab(multiplication_table(fr), p)
-    names = fr.element_names[invperm(p)]
-    FusionRing(Np, names, fr.name*"/perm")
-end
-
-"""
 #might return false positives - only checks in 1direction
     is_equivalent(r1, r2) -> Bool
 
