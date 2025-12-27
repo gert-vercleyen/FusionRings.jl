@@ -283,7 +283,7 @@ function characters(ring::FusionRing; use_numerics = true )
     r    = rank( ring )
     mats = [ mt[i,:,:] for i in 1:r ]
     qqb  = algebraic_closure(QQ)
-
+    
     sort_mat( mat ) = sortslices( mat, dims = 1, by = char_sort_crit )
 
     if use_numerics
