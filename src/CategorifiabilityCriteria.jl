@@ -15,6 +15,9 @@ function csp_criterion( ring::FusionRing )
         s = sum( chars[ i, j1 ] * chars[ i, j2 ] * chars[ i, j3 ] / chars[ i, 1 ] )
         if ISREAL( s ) && lesserthan( s, 0 )
             return true
+        else 
+            continue
+        end
     end
 
     return false
