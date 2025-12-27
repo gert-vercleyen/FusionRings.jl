@@ -109,16 +109,23 @@ function tensor_product(r1::FusionRing, r2::FusionRing)::FusionRing
     # Assemble element names
     elnames = [ string(e1, "⊗", e2) for e1 in labels(r1) for e2 in labels(r2) ]
 
+    return fusion_ring(
+        mt; 
+        names = names, 
+        labels = elnames, 
+        frobenius_perron_dimensions = fpdims_new
+    )
+end
+
 "Return vector of simple indices with positive multiplicity in `a ⊗ b`."
-fusion_outcomes(fr::FusionRing, a::Int, b::Int)::Vector{Int} =
+function fusion_outcomes(fr::FusionRing, a::Int, b::Int)::Vector{Int}
     [c for (c,m) in fusion_product(fr,a,b) if m>0]
 
 "Ordered list form of `a ⊗ b`."
-decompose(fr::FusionRing, a::Int, b::Int) =
-    [(k,v) for (k,v) in fusion_product(fr,a,b)]
-
-    return fusion_ring(mt; names = names, labels = elnames, frobenius_perron_dimensions = fpdims_new)
+function decompose(fr::FusionRing, a::Int, b::Int) 
+    [ (k,v) for (k,v) in fusion_product(fr,a,b) ]
 end
+
 
 
 #check this out - replace tensor product with multipication, dir_Sum with sum
