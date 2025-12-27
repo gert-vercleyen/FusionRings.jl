@@ -9,7 +9,7 @@ function fusion_matrix(fr::FusionRing, a::Int)::Matrix{Int}
 end
 
 "Structure constant N[a,b,c]."
-fusion_coeff(fr::FusionRing, a::Int, b::Int, c::Int)::Int =
+function fusion_coeff(fr::FusionRing, a::Int, b::Int, c::Int)::Int
     multiplication_table(fr)[a,b,c]
 
 """
