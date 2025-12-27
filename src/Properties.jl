@@ -508,8 +508,6 @@ function is_commutative(fr::FusionRing)
     true
 end
 
-multiplicity(fr::FusionRing) = maximum(fusion_tensor(fr))
-
 function nonzero_structure_constants(fr::FusionRing)
     N = fusion_tensor(fr); r = size(N,1)
     out = Tuple{Int,Int,Int}[]
