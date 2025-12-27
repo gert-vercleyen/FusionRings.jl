@@ -103,7 +103,7 @@ export nonzero_structure_constants
 
 function nonzero_structure_constants(r::FusionRing)::Vector{Tuple{Int64, Int64, Int64}}
   mt = multiplication_table(r)
-  map( Tuple, findall( x -> x > 0, mt ) ) 
+  Tuple.( findall( x -> x > 0, mt ) ) 
 end
 
 export nzsc
@@ -506,15 +506,6 @@ function is_commutative(fr::FusionRing)
         N[a,b,c] == N[b,a,c] || return false
     end
     true
-end
-
-function nonzero_structure_constants(fr::FusionRing)
-    N = fusion_tensor(fr); r = size(N,1)
-    out = Tuple{Int,Int,Int}[]
-    for a in 1:r, b in 1:r, c in 1:r
-        N[a,b,c]>0 && push!(out,(a,b,c))
-    end
-    out
 end
 
 function conjugation_matrix(fr::FusionRing)
