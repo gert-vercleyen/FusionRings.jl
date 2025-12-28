@@ -89,8 +89,9 @@ end
 
 export conjugation_matrix
 
-function conjugation_matrix(r::FusionRing)::Array{Int,2}
-  return multiplication_table(r)[:,:,1]
+function conjugation_matrix(fr::FusionRing)
+    N = fusion_tensor(fr)
+    @views N[:, :, 1]
 end
 
 export multiplicity
@@ -508,10 +509,6 @@ function is_commutative(fr::FusionRing)
     true
 end
 
-function conjugation_matrix(fr::FusionRing)
-    N = fusion_tensor(fr)
-    @views N[:, :, 1]
-end
 
 """
     conjugate_element(fr, a) -> Int
