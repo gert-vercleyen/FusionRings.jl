@@ -1,0 +1,1 @@
+{"_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","1.6.0"]},"_type":{"name":"QQBarFieldElem","params":{"_type":"QQBarField"}},"data":{"minpoly":[["0","64"],["1","984"],["2","3525"],["3","-1952"],["4","379"],["5","-32"],["6","1"]],"acb":["-1fb21c77 -20 20000001 -3e","0 0 0 0"],"precision":"30"}}
