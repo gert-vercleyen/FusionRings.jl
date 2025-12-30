@@ -1,33 +1,42 @@
 (* ::Package:: *)
 
 (* ::Input:: *)
-(*PacletDirectoryLoad["~/Projects"];*)
-(*<<Anyonica`*)
+(**)
+
+
+PacletDirectoryLoad["~/Projects"];
+<<Anyonica`
 
 
 ringtojson[ r_FusionRing ]:= 
 	Module[
-		{ fc, asso, cats, catProps, categorifiableQ, sl2zreps },
+		{ fc, asso, cats, catProps, categorifiableQ, sl2zreps, tpdecomps, subfusrings },
 		fc = FC @ r;
 		
 		cats = FusionCategories @ r;
 		
 		categorifiableQ = 
 			Which[
-				Length @ cats > 0, 
-					True,
-				Length @ cats == 0 && Rank[r] < 8 && Mult[r] == 1 && FC[r] =!= {7,1,2,11},
-					False,
+                MissingQ[cats] && ( Rank[r] > 7 || Mult[r] > 1 ),
+                    Null,
+				MissingQ[cats] && Rank[r] < 8 && Mult[r] == 1 && FC[r] =!= {7,1,2,11},
+                    False,
+                FC[r] === {7,1,2,11},
+                    Null,
 				True,
-					Null	
+					True
 			];
 		
-		If[ 
-			Length @ cats > 0,
+		If[
+			TrueQ[categorifiableQ],
 			catProps = MemberQ[True] /@ 
 				Comap[ Map /@ { BraidedQ, UnitaryQ, SphericalQ, RibbonQ, ModularQ }, cats ],
 			catProps = ConstantArray[ Null, 5 ]
 		];
+
+        tpdecomps = WhichDecompositions @ r;
+
+        subfusrings = SubFusionRings @ r;
 
 		sl2zreps = 
 			With[{md = ModularData[r]},
@@ -35,7 +44,7 @@ ringtojson[ r_FusionRing ]:=
 					MissingQ[md],
 					Null,
 					Table[ 
-						"rep_"<>ToString[i] -> N[ ReIm @ md[[i]], 8 ],
+						"reps_"<>ToString[i] -> N[ ReIm @ md[[i]], 64 ],
 						{i,Length @ md}
 					]
 				]
@@ -44,42 +53,54 @@ ringtojson[ r_FusionRing ]:=
 		asso =<|
 			"references" -> {""}
 			,
-			"software" -> {"https://doi.org/10.5281/zenodo.15920400"}
+			"software" -> {"https://doi.org/10.5281/zenodo.10686859"}
 			,
 			"mult_tab" -> MT @ r
 			,
 			"texnames" -> TeXNames @ r
 			,
-			"barcode"  -> IntegerDigits[Barcode@r]
+			"barcode"  -> ToString @ Barcode @ r
 			,
 			"formal_code" -> FC @ r
 			,
-			"tensor_product_decompositions" -> 
-				<| 
-					"identifiers" -> {"anyonwiki_code"},
-					"value" -> Map[ FC, WhichDecompositions @ r, {2} ] 
-				|>
+			"tensor_product_decompositions" ->
+                If[
+                    tpdecomps === {},
+                    {},
+                    <|
+                        "identifiers" -> {"anyonwiki_code"},
+                        "value" -> Map[ FC, tpdecomps, {2} ]
+                    |>
+                ]
 			,
-			"sub_fusion_rings" -> 
-				<|
-					"identifiers" -> {{"injection","anyonwiki_code"}},
-					"value" -> MapAt[FC, SubFusionRings[r], {All,2}]
-				|>
+			"non_trivial_sub_fusion_rings" ->
+                If[
+                    subfusrings === {},
+                    {},
+                    <|
+                        "identifiers" -> {{"injection","anyonwiki_code"}},
+                        "value" -> MapAt[FC, subfusrings, {All,2}]
+                    |>
+                ]
 			,
 			"numeric_characters" ->
-				Map[ ReIm, N @ FusionRingCharacters @ r, {2} ]
+				Map[ ReIm, N[ FusionRingCharacters @ r, 64 ], {2} ]
 			,
-			"numeric_frobenius_perron_dimensions" -> N @ ReIm @ FPDims @ r
+			"numeric_frobenius_perron_dimensions" -> N[ ReIm @ FPDims @ r, 64 ]
 			,
-			"numeric_frobenius_perron_dimension" -> N @ ReIm @ FPDim @ r
+			"numeric_frobenius_perron_dimension" -> N[ ReIm @ FPDim @ r, 64 ]
 			,
 			"numeric_projective_SL2Z_reps" -> sl2zreps
 			,
-			"has_categories_with_props" -> 
-				Transpose @ { 
-					{ "Braided", "Unitary", "Spherical", "Ribbon", "Modular"  }, 
-					catProps
-				}
+			"has_categories_with_props" ->
+                If[
+                    TrueQ @ categorifiableQ,
+                    Transpose @ {
+                        { "Braided", "Unitary", "Spherical", "Ribbon", "Modular"  },
+                        catProps
+                    },
+                    Null
+                ]
 			,
 			"categorifiable" -> categorifiableQ
 			,
@@ -94,38 +115,43 @@ ringtojson[ r_FusionRing ]:=
 			  ]			
 			,
 			"comments" -> {""}
+            ,
+            "info" ->
+                "Fusion ring. mult_tab: structure constants." <>
+                " barcode & formal_code: unique identifiers see (DOI: 10.1063/5.0148848)." <>
+                " non_trivial_sub_fusion_rings: tuples where the first element = elements of ring that" <>
+                " form subring isomorphic to subring identified by second element of the tuple." <>
+                " software: doi of original software used to represent fusion ring." <>
+                " references: doi of paper from which data was obtained." <>
+                " categorifiable: false=not categorifiable, null= unknown." <>
+                " categorifications: if categorifiable then anyonwiki codes of" <>
+                " pivotal (braided) fusion cats that categorify ring." <>
+                " numeric_projective_SL2Z_reps: each rep consists of a generalized S-matrix and" <>
+                " a vector of vectors representing the ln(diag(T))/(2 pi i) of a generalized T-matrix."
 		|>
 
 	];
 	
-exportringstojson[dir_String] := 
-	exportringstojson[dir,Range[Length @ FRL ] ];
+exportringstojson[dir_String] :=
+    With[{ l = Length @ FRL },
+        Do[
+            If[ Mod[i,1000] == 0, Print["First "<> ToString[i] <> " rings exported. "] ];
+            exportringtojson[dir] @ FRL[[i]],
+            { i, l }
 
-exportringstojson[dir_String,range_] :=
+        ]
+    ]
+
+(* NOTE: only works for rings of which the formal code is known *)
+exportringtojson[dir_String][r_FusionRing] :=
 	Module[
-		{asso, codeToString, info},
-		codeToString[l_List] := 
-			StringReplace[ ToString @ l,{ " "->"", ","->"_","{"->"","}"->"" } ];
-		
-		info = 
-		"info" -> 
-			"Fusion ring. mult_tab: structure constants." <> 
-			" barcode & formal_code: unique identifiers see (DOI: 10.1063/5.0148848)." <>
-			" sub_fusion_rings: tuples where the first element = elements of ring that" <> 
-			" form subring isomorphic to subring identified by second element of the tuple." <> 
-			" software: doi of original software used to represent fusion ring." <>
-			" references: doi of paper from which data was obtained." <>
-			" categorifications: ";
-		
-		PrintTemporary["Converting rings to json"];
-		asso = 
-			Association @ 
-			Append[info] @ 
-			DynamicMap[ ToString[FC[#]] -> ringtojson[#]&, FRL[[range]] ];
-		
+		{asso, codeToString, info, codestring},
+		codestring =
+			StringReplace[ ToString @ FC @ r, { " "->"", ","->"_","{"->"","}"->"" } ];
+
 		Export[
-			FileNameJoin[{dir,"fusionrings.json"}],
-			asso,
+			FileNameJoin[{dir,"fr_" <> codestring <>".json"}],
+			ringtojson @ r,
 			"JSON"
 		];
 	]
