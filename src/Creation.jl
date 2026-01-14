@@ -6,15 +6,23 @@ struct FusionRing
     texnames::Array{String,1}
     labels::Array{String,1}
     barcode
-    formal_code::Array{Int,1}
-    tensor_product_decompositions
-    sub_fusion_rings
-    frobenius_perron_dimensions
-    modular_data
+    anyonwiki_code::Array{Int,1}
     characters
-    numeric_frobenius_perron_dimensions
-    numeric_modular_data
+    sub_fusion_rings
+    projective_SL2Z_reps
+    frobenius_perron_dimension
+    frobenius_perron_dimensions
+    tensor_product_decompositions
     numeric_characters
+    numeric_projective_SL2Z_reps
+    numeric_frobenius_perron_dimension
+    numeric_frobenius_perron_dimensions
+    has_categories_with_props
+    categorifiable
+    categorifications
+    references
+    software
+    comments
 end
 
 export fusion_ring
@@ -54,20 +62,28 @@ check_labels(mt, names) = length(names) == size(mt, 1)
 
 
 function fusion_ring(
-    mt; 
-    names                               = [], 
-    texnames                            = [], 
+    mt;
     labels                              = [],
-    barcode                             = missing, 
-    formal_code                         = [],
-    tensor_product_decompositions       = missing, 
+    names                               = [], 
+    texnames                            = [],
+    barcode                             = missing,
+    anyonwiki_code                      = missing,
+    characters                          = missing,
     sub_fusion_rings                    = missing,
-    frobenius_perron_dimensions         = missing, 
-    modular_data                        = missing,
-    characters                          = missing, 
-    numeric_characters                  = missing,  
+    projective_SL2Z_reps                = missing,
+    frobenius_perron_dimension          = missing,
+    frobenius_perron_dimensions         = missing,
+    tensor_product_decompositions       = missing,
+    numeric_characters                  = missing,
+    numeric_frobenius_perron_dimension  = missing,
     numeric_frobenius_perron_dimensions = missing,
-    numeric_modular_data                = missing,
+    numeric_projective_SL2Z_reps        = missing,
+    has_categories_with_props           = missing,
+    categorifiable                      = missing,
+    categorifications                   = missing,
+    references                          = missing,
+    software                            = missing,
+    comments                            = missing,
     skip_check                          = false,
     )
 
@@ -81,38 +97,34 @@ function fusion_ring(
             error("labels length ≠ rank")
     end
 
-    labels == [] && (labels = [bold_integer(i) for i in 1:size(mt, 1)])
+    labels == [] && (labels = String[bold_integer(i) for i in 1:size(mt, 1)])
 
     FusionRing(
-        Int.(mt), 
-        names, 
-        texnames, 
-        labels, 
-        barcode, 
-        formal_code,
-        tensor_product_decompositions, 
-        sub_fusion_rings, 
-        frobenius_perron_dimensions,
-        modular_data, 
-        characters,
-        numeric_frobenius_perron_dimensions,
-        numeric_modular_data,
-        numeric_characters
+        mt
+        ,names
+        ,texnames
+        ,labels
+        ,barcode
+        ,anyonwiki_code
+        ,characters
+        ,sub_fusion_rings
+        ,projective_SL2Z_reps
+        ,frobenius_perron_dimension
+        ,frobenius_perron_dimensions
+        ,tensor_product_decompositions
+        ,numeric_characters
+        ,numeric_projective_SL2Z_reps
+        ,numeric_frobenius_perron_dimension
+        ,numeric_frobenius_perron_dimensions
+        ,has_categories_with_props
+        ,categorifiable
+        ,categorifications
+        ,references
+        ,software
+        ,comments
     )
 end
 
-# Formatting of fusion rings 
-function Base.show( io::IO, ring::FusionRing ) 
-    p(str) = print( io, str );
-    if ring.names != []
-        p( "FR(" * names(ring)[1] * ")" )
-    elseif ring.formal_code != []
-        p( "FR(" * string(ring.formal_code)[2:end-1] * ")" )
-    else
-        props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
-        p( "FR(" * join( props, ", "  ) * ")" )
-    end
-end
 
 export psu2k_fusion_ring, su2k_fusion_ring, son2_fusion_ring, metaplectic_fusion_ring,
        fusion_ring_from_group, zn_fusion_ring, group_rep_fusion_ring, hi_fusion_ring,
@@ -205,6 +217,8 @@ function fusion_ring_from_group(grp)
 end
 
 # TODO: add missing information
+# TODO: this doesn't look correct. It should work for any group,
+# not just cyclic ones
 # Tambara–Yamagami rings
 function ty_fusion_ring(G::AbstractVector)::FusionRing
     n = length(G)
