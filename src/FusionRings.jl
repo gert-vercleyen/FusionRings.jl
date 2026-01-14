@@ -1,14 +1,16 @@
 module FusionRings
 
 using Oscar
-import Oscar: multiplication_table, is_commutative,rank
+import Oscar: multiplication_table, is_commutative, rank
 using Combinatorics
 using JSON
 using LinearAlgebra:eigen
+using Base.Threads
 
 include("GeneralFunctions.jl")
 include("Creation.jl")
 include("Properties.jl")
 include("Operations.jl")
 include("ImportData.jl")
+include("FormattingAndPrinting.jl")
 end
