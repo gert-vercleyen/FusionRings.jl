@@ -44,7 +44,7 @@ ringtojson[ r_FusionRing ]:=
 					MissingQ[md],
 					Null,
 					Table[ 
-						"reps_"<>ToString[i] -> N[ ReIm @ md[[i]], 64 ],
+						"reps_"<>ToString[i] -> Evaluate[Chop /@ ReIm @ N[  md[[i]], 64 ]],
 						{i,Length @ md}
 					]
 				]
@@ -84,7 +84,7 @@ ringtojson[ r_FusionRing ]:=
                 ]
 			,
 			"numeric_characters" ->
-				Map[ ReIm, N[ FusionRingCharacters @ r, 64 ], {2} ]
+				Map[Chop@* ReIm, N[ FusionRingCharacters @ r, 64 ], {2} ]
 			,
 			"numeric_frobenius_perron_dimensions" -> N[ ReIm @ FPDims @ r, 64 ]
 			,
@@ -234,13 +234,11 @@ FRToTexString[ {a_,b_,c_,d_} ]:=
 	
 
 
-(* ::Input:: *)
-(*exportringstojson[ "~/Tests/JSONFusionRings2", Range[20] ]*)
+["~/Projects/FusionRings.jl/src/data/FusionRingsJSON/"]
 
 
 (* ::Input:: *)
-(*json = Import["~/Tests/JSONFusionRings/fusionrings.json"];*)
+(*ringtojson[FRL[[505]]]*)
 
 
-(* ::Input:: *)
-(*ringtojson[FRL[[5]]]*)
+
