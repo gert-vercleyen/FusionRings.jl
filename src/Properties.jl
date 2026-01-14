@@ -176,7 +176,7 @@ end
 export anyonwiki_code
 
 function anyonwiki_code(r::FusionRing)::Array{Int,1}
-  return r.formal_code
+  return r.anyonwiki_code
 end
 
 export barcode 
