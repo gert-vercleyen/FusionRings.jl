@@ -513,26 +513,23 @@ function conjugate_element(fr::FusionRing, a)
 end
 
 
-function is_group_ring(fr::FusionRing)
-    sum( fusion_tensor(fr) ) == FusionRings.rank(r)^2
-end
-
-function sub_fusion_rings(fr::FusionRing)
-    L = labels(fr); r = length(L)
-    sets = Vector{Vector{String}}()
-    for mask in 1:(1<<(r-1))-1
-        subset = [L[1]]
-        for i in 2:r
-            if ((mask >> (i-2)) & 1) == 1
-                push!(subset, L[i])
-            end
-        end
-        if is_sub_fusion_ring(fr, subset) && length(subset)<r
-            push!(sets, subset)
-        end
-    end
-    sets
-end
+# TODO: still uses labels and doesn't return injections
+#function sub_fusion_rings(fr::FusionRing)
+#    L = labels(fr); r = length(L)
+#    sets = Vector{Vector{String}}()
+#    for mask in 1:(1<<(r-1))-1
+#        subset = [L[1]]
+#        for i in 2:r
+#            if ((mask >> (i-2)) & 1) == 1
+#                push!(subset, L[i])
+#            end
+#        end
+#        if is_sub_fusion_ring(fr, subset) && length(subset)<r
+#            push!(sets, subset)
+#        end
+#    end
+#    sets
+#end
 
 function is_sub_fusion_ring(fr::FusionRing, S::Vector)
     # Accept Vector{String} preferred, but allow symbols via conversion
