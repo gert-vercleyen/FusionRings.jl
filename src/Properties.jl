@@ -9,47 +9,32 @@ function multiplication_table(r::FusionRing)::Array{Int,3}
   return r.multiplication_table
 end
 
-export print_multiplication_table
 
-function print_multiplication_table(r::FusionRing)
-  rk = rank(r)
-  mt = multiplication_table(r)
 
-  tab = fill( "", rk, rk )
-  for i in 1:rk, j in 1:rk
-    tab[i,j] = row_to_string(r,mt[i,j,:]) 
-  end
-  tab
-end
-
-export row_to_string
-
-function row_to_string(r::FusionRing, row)::String
-  n             = length(row)
-  el_names      = labels(r)
-  non_zero_ind  = findall(i -> row[i] > 0, 1:n)
-  to_string(i)  = element_to_string(row[i], el_names[i])
-
-  join( 
-    map(to_string, non_zero_ind), 
-    " ⊕ "
-  )
-end
-
-#check this out
-function tensor_product(fr::FusionRing, a, b)
-    imap = indexmap(fr)
-    normalize(x) = x isa Integer ? x : imap[String(x)]
-    ai = normalize(a); bi = normalize(b)
-    N = fusion_tensor(fr)[ai,bi,:]
-    out = Dict{String,Int}()
-    L = labels(fr)
-    for (ci,m) in enumerate(N)
-        m==0 && continue
-        out[L[ci]] = m
-    end
-    out
-end
+#function print_multiplication_table(r::FusionRing)
+#  rk = rank(r)
+#  mt = multiplication_table(r)
+#
+#  tab = fill( "", rk, rk )
+#  for i in 1:rk, j in 1:rk
+#    tab[i,j] = row_to_string(r,mt[i,j,:])
+#  end
+#  tab
+#end
+#
+#export row_to_string
+#
+#function row_to_string(r::FusionRing, row)::String
+#  n             = length(row)
+#  el_names      = labels(r)
+#  non_zero_ind  = findall(i -> row[i] > 0, 1:n)
+#  to_string(i)  = element_to_string(row[i], el_names[i])
+#
+#  join(
+#    map(to_string, non_zero_ind),
+#    " ⊕ "
+#  )
+#end
 
 function element_to_string(mult,elem)::String
   if mult == 0 
