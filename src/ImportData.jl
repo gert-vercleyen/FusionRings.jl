@@ -57,12 +57,11 @@ function root_sort_crit( x )
 end
 
 function save_qqb_num( dir::String, x::QQBarFieldElem )
-    idstring = qqb_id(x)
-    Oscar.save( joinpath( dir, idstring * ".mrdi" ), idstring => x )
+    return nothing
 end
 
 function save_qqb_num( x::QQBarFieldElem )
-    save_qqb_num( joinpath(@__DIR__, "data", "Numbers", "QQBarFieldElems"), x )
+    return nothing
 end
 
 # Load the dictionary of qqbar elems 
