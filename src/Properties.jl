@@ -286,9 +286,9 @@ function characters(ring::FusionRing; use_numerics = true )
 end
 
 function numeric_diagonalizing_matrix( mats, tries::Int=64, tol::Real=1e-12 )
-    r = mats |> length
+    r = length( mats )
 
-    m, n = mats |> first |> size
+    m, n = size( first( mats ) )
 
     function is_diagonalizing_matrix( mat, mats )
         imat = inv(mat)
