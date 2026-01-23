@@ -112,3 +112,25 @@ function replace_by_known( v; tol=1e-10 )
         error("No matching value found")
     end
 end
+
+export riffle
+
+function riffle(v::Vector{T}, w::Vector{T}) where {T}
+    result = T[]
+    for i in 1:max(length(v), length(w))
+        if i <= length(v)
+            push!(result, v[i])
+        end
+        if i <= length(w)
+            push!(result, w[i])
+        end
+    end
+    return result
+end
+
+export stringriffle
+
+function stringriffle( v::Vector{String}, w::Vector{String} )
+    l = riffle( v, w )
+    string( l ... )
+end
