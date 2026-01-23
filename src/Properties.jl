@@ -247,6 +247,7 @@ function universal_grading(r::FusionRing)
 end
 
 function all_gradings(r::FusionRing)
+
 end
 
 function commutator(r::FusionRing)
