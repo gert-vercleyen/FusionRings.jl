@@ -450,24 +450,18 @@ end
 
 # finds diagonalizing matrix using floating point arithmetic
 
-export sl_2_ZZ_reps
+export projective_SL_2_ZZ_reps
 
-function sl_2_ZZ_reps(r::FusionRing)
-  return r.modular_data
+function projective_SL_2_ZZ_reps( fr::FusionRing )
+    md = fr.projective_SL2Z_reps
+    if md !== missing 
+        return md
+    else
+        error("No data available and calculation not implemented yet")
+    end
 end
 
-function s_matrices(r::FusionRing)
-
-end
-  
-function normalized_s_matrices(r::FusionRing)
-  
-end
-
-function twist_factors(r::FusionRing)
-
-end
-
+export numeric_fpdims
 
 function numeric_fpdims(fr::FusionRing)
     r = rank(fr)
