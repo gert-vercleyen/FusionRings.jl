@@ -152,7 +152,35 @@ end
 export sub_fusion_rings
 
 function sub_fusion_rings(r::FusionRing)
-  return r.sub_fusion_rings
+    dictvec = r.sub_fusion_rings
+    if dictvec !== missing
+        [
+            Dict(
+                "injection"   => dict["injection"],
+                "fusion_ring" => awc(dict["anyonwiki_code"])
+            )
+            for dict in dictvec
+        ]
+    else
+        error("Method sub_fusion_rings not full implemented yet")
+    end
+# TODO: still uses labels and doesn't return injections
+#function sub_fusion_rings(fr::FusionRing)
+#    L = labels(fr); r = length(L)
+#    sets = Vector{Vector{String}}()
+#    for mask in 1:(1<<(r-1))-1
+#        subset = [L[1]]
+#        for i in 2:r
+#            if ((mask >> (i-2)) & 1) == 1
+#                push!(subset, L[i])
+#            end
+#        end
+#        if is_sub_fusion_ring(fr, subset) && length(subset)<r
+#            push!(sets, subset)
+#        end
+#    end
+#    sets
+#end
 end
 
 function sub_ring_tables(mat::Array{Int,2})
