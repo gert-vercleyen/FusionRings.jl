@@ -280,19 +280,24 @@ end
 
 # import projective SL2Z reps
 function psrfromjs(js::JSON.Object{String, Any})
-    try
+    k = keys( js )
+    if "projective_SL2Z_reps" ∈ k
         psr = js["projective_SL2Z_reps"]
-    catch e
+    else
         return missing
     end
 
-    if psr == Any[]
+    if psr == "NotImplementedYet"
+        return missing
+    end
+
+    if psr == Any[] 
         return Dict{String, Array}[]
     else
         dicts = Dict{String, Array}[]
-        for rep in eachindex( npsr )
-            sm = npsr[rep]["SMatrix"];
-            tf = npsr[rep]["TwistFactors"];
+        for rep in eachindex( psr )
+            sm = psr[rep]["SMatrix"];
+            tf = psr[rep]["TwistFactors"];
             r  = size(sm,1);
             push!(
                 dicts,
