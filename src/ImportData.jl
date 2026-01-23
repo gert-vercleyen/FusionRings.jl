@@ -44,20 +44,13 @@ function save_qqb_num( x::QQBarFieldElem )
     return nothing
 end
 
-# Load the dictionary of qqbar elems 
-function load_qqb_num_dict()
-    datadir = joinpath( @__DIR__, "data", "Numbers", "QQBarFieldElems" )
-    ids     = Oscar.load( joinpath( datadir, "idsqqbfieldelems.mrdi") )
-    nums    = Oscar.load( joinpath( datadir, "qqbfieldelems.mrdi") )
-    
-    Dict( ids[i] => nums[i] for i in 1:length(ids) )
-end
-
-qqb_dict = load_qqb_num_dict()
+# Load the dictionary of qqbar elems
 
 # Get from dict
-getfromqqbdict( s::String ) = qqb_dict[s]
-getfromqqbdict( a::Array{String} ) = gfqqbd.(a)
+export from_qqb_id
+
+from_qqb_id( s::String ) = qqb_dict[s]
+from_qqb_id( a::Array{String} ) = from_qqb_id.(a)
 
 ############################################################
 # Exporting and importing fusion rings
@@ -67,6 +60,10 @@ getfromqqbdict( a::Array{String} ) = gfqqbd.(a)
 # had to store those using a variety of hacks. 
 # The following functions convert the stored data back 
 # to their proper types.
+#
+# TODO: some of the if clauses below are necessary for legacy
+# compatibility. Once all json files have the correct format
+# we should remove it since it slows down the import
 
 # formal code
 function fcfromjs( js::JSON.Object{String, Any} )::Vector{Int64}
