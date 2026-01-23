@@ -142,7 +142,7 @@ end
 
 export barcode 
 
-function barcode(r::FusionRing)::Int
+function barcode(r::FusionRing)
   return r.barcode
 end
 
