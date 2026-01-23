@@ -53,7 +53,7 @@ from_qqb_id( s::String ) = qqb_dict[s]
 from_qqb_id( a::Array{String} ) = from_qqb_id.(a)
 
 ############################################################
-# Exporting and importing fusion rings
+# Importing fusion rings
 ############################################################
 # The fusion rings are stored as json files. Not all data 
 # types (e.g. complex numbers) are supported by JSON so we 
@@ -67,12 +67,21 @@ from_qqb_id( a::Array{String} ) = from_qqb_id.(a)
 
 # formal code
 function fcfromjs( js::JSON.Object{String, Any} )::Vector{Int64}
-  fc = js["formal_code"]
-  if length(fc) == 0
-    missing
-  else
-    [ fc[i] for i in 1:4 ]  
-  end
+    k = keys( js )
+
+    if "formal_code" ∈ k
+        fc = js["formal_code"]
+    elseif "anyonwiki_code" ∈ k
+        fc = js["anyonwiki_code"]
+    else
+        return missing
+    end
+
+    if length(fc) == 0
+        missing
+    else
+        [ fc[i] for i in 1:4 ]  
+    end
 end
 
 # mult tab
