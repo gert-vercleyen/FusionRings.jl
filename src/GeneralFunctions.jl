@@ -71,7 +71,7 @@ function to_cyclotomic_field( x::AbsSimpleNumFieldElem, emb )
 end
 
 function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb ) 
-	length(arr) === 0 && return ( arr, emb )
+	length(arr) === 0 && return (arr, emb)
 	
 	# Check parrent field of all fields are equal
 	is_constant_array( parent.(arr) ) || error("Elements of array should belong to same field")
