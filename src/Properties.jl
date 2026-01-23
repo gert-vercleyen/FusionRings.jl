@@ -211,12 +211,19 @@ end
 
 export decompositions
 
-function decompositions(r::FusionRing,product="TensorProduct")::Array{FusionRing,1}
-  if product == "TensorProduct"
-    return r.tensor_product_decompositions
-  else 
-    return error("Only tensor product decompositions are defined at the moment.")
-  end
+function decompositions( fr::FusionRing, product="TensorProduct" )#::Vector{ Vector{FusionRing} }
+    product == "TensorProduct" ||  error("Only tensor product decompositions are defined at the moment.")
+
+    tpd = fr.tensor_product_decompositions
+    if tpd !== missing
+        [ [ awc( code ) for code in decomp ] for decomp in tpd ]
+    else
+        tensor_product_decompositions(fr)
+    end
+end
+
+function tensor_product_decompositions( r::FusionRing )
+    error("Not implemented yet.")
 end
 
 function adjoint_fusion_ring(r::FusionRing)::FusionRing
