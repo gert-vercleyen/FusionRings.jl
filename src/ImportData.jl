@@ -126,13 +126,14 @@ function sfrfromjs(js::JSON.Object{String, Any})
 
     intData =
         [
-        [ Int.( vec ) for vec in sr ]
-        for sr in srs
+            [ Int.( vec ) for vec in sr ]
+            for sr in srs
         ]
+
     [
         Dict(
-        "injection"       => data[1],
-        "anyonwiki_code"  => data[2]
+            "injection"       => data[1],
+            "anyonwiki_code"  => data[2]
         )
         for data ∈ intData
     ]
