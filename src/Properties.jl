@@ -476,6 +476,8 @@ function numeric_fpdims(fr::FusionRing)
     v ./ v[1]
 end
 
+export numeric_fpdim
+
 numeric_fpdim(fr::FusionRing) = sum(x->x*x, numeric_fpdims(fr))
 
 function is_commutative(fr::FusionRing)
