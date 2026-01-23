@@ -171,8 +171,6 @@ function nfpdfromjs(js::JSON.Object{String, Any})::ComplexF64
     vec_to_cflt( js["numeric_frobenius_perron_dimension"] )
 end
 
-# TODO: only works for cats given by anyonwiki_code
-# categorifications
 function cfromjs(js::JSON.Object{String, Any})
   # Known to be non categorifiable
   if js["categorifiable"] === false
@@ -189,6 +187,8 @@ function cfromjs(js::JSON.Object{String, Any})
 
 end
 
+# TODO: only works for cats given by anyonwiki_code
+# categorifications
 function ctsfromjs(js::JSON.Object{String, Any})
   # Known to be non categorifiable
   if js["categorifiable"] === false
