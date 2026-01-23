@@ -1,7 +1,7 @@
 module FusionRings
 
 using Oscar
-import Oscar: multiplication_table, is_commutative, rank
+import Oscar: multiplication_table, is_commutative, rank, multiplicity
 using Combinatorics
 using JSON
 using LinearAlgebra:eigen
