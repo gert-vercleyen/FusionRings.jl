@@ -74,22 +74,23 @@ function to_cyclotomic_field( arr::Array{AbsSimpleNumFieldElem}, emb )
 	length(arr) === 0 && return ( arr, emb )
 	
 	# Check parrent field of all fields are equal
-	is_constant_array( parent.( arr ) ) || error("Elements of array should belong to same field")
+	is_constant_array( parent.(arr) ) || error("Elements of array should belong to same field")
 
 	qqb = algebraic_closure(QQ)
 	K   = parent( arr[1] )
-	C   = ray_class_field( K ) 
-	deg = C |> conductor |> first |> minimum |> Int
-	L,  = cyclotomic_field( deg )
+	C   = ray_class_field(K) 
+	deg = (Int ∘ minimum ∘ first ∘ conductor)(C)
+	L,  = cyclotomic_field(deg)
 
 	gen_K_as_cyclo = first( roots( L, defining_polynomial(K) ) )
 	to_cyclo       = hom( K, L, gen_K_as_cyclo )
 
+    rts = roots( qqb, defining_polynomial(L) )
 	for j in 1:deg
-		emb_cyclo = hom( L, qqb, roots( qqb, defining_polynomial(L) )[j] )
+		emb_cyclo = hom( L, qqb, rts[j] )
 
-		if emb_cyclo(gen_K_as_cyclo) == emb(gen(K)) 	
-			return ( to_cyclo.(arr), emb_cyclo )
+		if emb_cyclo(gen_K_as_cyclo) == emb( gen(K) ) 	
+			return ( to_cyclo.(arr), emb_cyclo, deg )
 		else
 			continue
 		end
