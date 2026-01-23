@@ -18,6 +18,8 @@ function qqb_id( x::QQBarFieldElem )
     stringriffle( coeffs, us ) *  "_" * numstring
 end
 
+qqb_id( arr::Array{QQBarFieldElem} ) = qqb_id.(arr)
+
 function rootnum( x::QQBarFieldElem )
     p   = minimal_polynomial( x ) 
     rts = roots( QQBar, p )
