@@ -9,45 +9,6 @@ function multiplication_table(r::FusionRing)::Array{Int,3}
   return r.multiplication_table
 end
 
-
-
-#function print_multiplication_table(r::FusionRing)
-#  rk = rank(r)
-#  mt = multiplication_table(r)
-#
-#  tab = fill( "", rk, rk )
-#  for i in 1:rk, j in 1:rk
-#    tab[i,j] = row_to_string(r,mt[i,j,:])
-#  end
-#  tab
-#end
-#
-#export row_to_string
-#
-#function row_to_string(r::FusionRing, row)::String
-#  n             = length(row)
-#  el_names      = labels(r)
-#  non_zero_ind  = findall(i -> row[i] > 0, 1:n)
-#  to_string(i)  = element_to_string(row[i], el_names[i])
-#
-#  join(
-#    map(to_string, non_zero_ind),
-#    " ⊕ "
-#  )
-#end
-
-function element_to_string(mult,elem)::String
-  if mult == 0 
-    return ""
-  elseif mult == 1
-    return elem
-  else 
-    return string(mult) * " " * elem 
-  end
-end
-
-pmt = print_multiplication_table
-
 export rank
 
 function rank(r::FusionRing)::Int
