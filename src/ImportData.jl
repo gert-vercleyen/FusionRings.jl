@@ -233,6 +233,7 @@ end
 # MethodError: Cannot `convert` an object of type Vector{Dict{String, Array}} to an object of type Dict{String, Array}
 # The error is not reproducible when using the REPL
 function npsrfromjs(js::JSON.Object{String, Any})#::Vector{Dict{String, Array}}
+    try
     npsr = js["numeric_projective_SL2Z_reps"]
     if npsr == Any[]
         return Dict{String, Array}[]
@@ -253,6 +254,9 @@ function npsrfromjs(js::JSON.Object{String, Any})#::Vector{Dict{String, Array}}
             )
         end
         return dicts
+    end
+    catch e
+        return missing
     end
 end
 
