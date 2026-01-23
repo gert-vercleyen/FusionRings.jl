@@ -573,12 +573,13 @@ end
 """
     conjugate_element(fr, a) -> Int
 
-Return the integer index of the dual (conjugate) simple object of `a`.
-Accepts an integer index, a `String`, or a `Symbol`.
+Return  integer index of  dual  simple object of `a`.
+Accepts  integer index, a `String`, or a `Symbol`.
 
 Rationale: internal computations (e.g. composing with other index-based
-operations) are simpler when the result is an index rather than a label.
-Use `conjugate_label` if you need the string form.
+operations) are simpler when  result is  index rather than  label.
+
+Use `conjugate_label` if  need the string form.
 """
 function conjugate_element(fr::FusionRing, a)
     imap = indexmap(fr)
