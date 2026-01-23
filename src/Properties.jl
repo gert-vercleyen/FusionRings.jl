@@ -187,6 +187,8 @@ function sub_ring_tables(mat::Array{Int,2})
 
 end
 
+# injection_form( subring, ring ) returns the vector of elements of
+# ring that form subring in the correct order  
 function injection_form( subring::FusionRing, ring::FusionRing )
 
 end
