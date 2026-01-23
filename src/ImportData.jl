@@ -190,18 +190,26 @@ end
 # TODO: only works for cats given by anyonwiki_code
 # categorifications
 function ctsfromjs(js::JSON.Object{String, Any})
-  # Known to be non categorifiable
-  if js["categorifiable"] === false
-    return Vector{Int}[]
-  end
+    # Known to be non categorifiable
+    if js["categorifiable"] === false
+        return Vector{Int64}[]
+    end
 
-  # Nothing known about categorifiability
-  if js["categorifiable"] === nothing 
-    return missing
-  end
+    # Nothing known about categorifiability
+    if js["categorifiable"] === nothing 
+        return missing
+    end
 
-  # Has fusion categories
-  [ Int.(code) for code in js["categorifications"]["categories"] ]
+    # Has fusion categories
+    cats = js["categorifications"]
+    k    = keys( cats )
+
+    # Legacy compatibility
+    if "categories" ∈ k
+        [ Int.(code) for code in cats["categories"] ]
+    else
+        [ Int.(code) for code in cats ]
+    end
 end
 
 function ctpfromjs(js::JSON.Object{String, Any})
