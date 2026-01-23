@@ -258,7 +258,7 @@ export characters
 
 function characters(ring::FusionRing; use_numerics = true )
   if !(ring.characters === missing)
-    return ring.characters
+    return from_qqb_id( ring.characters )
   elseif !FusionRings.is_commutative(ring) 
     error("Calculation of characters for non-commutative fusion ring is not implemented yet.")
   elseif rank(ring) == 1
