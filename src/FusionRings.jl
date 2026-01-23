@@ -6,6 +6,7 @@ using Combinatorics
 using JSON
 using LinearAlgebra:eigen
 using Base.Threads
+using Accessors
 
 include("GeneralFunctions.jl")
 include("Creation.jl")
