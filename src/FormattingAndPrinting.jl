@@ -83,7 +83,9 @@ function print_multiplication_table(fr::FusionRing; include_zeros::Bool=false)
     nothing
 end
 
-"Pretty one-liner: `a ⊗ b = ...` using printed names; `a,b` are indices."
+pmt = print_multiplication_table
+
+"Pretty one-liner: `a × b = ...` using printed names; `a,b` are indices."
 function product_string(fr::FusionRing, a::Int, b::Int)
     rhs = let d = fusion_product(fr,a,b), names = fr.element_names
         isempty(d) ? "0" :
