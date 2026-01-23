@@ -14,7 +14,7 @@ end
 
 export to_composite_field
 
-function to_composite_field( 
+function to_composite_field(
     x::QQBarFieldElem,
     simplify_field = false, 
     canonical_simplification = true
@@ -28,22 +28,22 @@ function to_composite_field(
 end
 
 function to_composite_field( 
-  arr::Array{QQBarFieldElem}; 
-  simplify_field = false, 
-  canonical_simplification = true
-  )
+    arr::Array{QQBarFieldElem}; 
+    simplify_field = false, 
+    canonical_simplification = true
+    )
 
-  K, f = number_field( QQ, unique( arr ) )
-  
-  if simplify_field 
-    L, g = simplify( K; canonical = canonical_simplification )
-    to_field_elem  = x -> preimage( g, preimage( f, x ) )
-    fg = hom( L, algebraic_closure(QQ), (f ∘ g ∘ gen)(L) )
-    return ( to_field_elem.(arr), fg )
-  else 
-    to_field_elem = x -> preimage( f, x )
-    return ( to_field_elem.(arr), f )
-  end
+    K, f = number_field( QQ, unique( arr ) )
+
+    if simplify_field 
+        L, g = simplify( K; canonical = canonical_simplification )
+        to_field_elem  = x -> preimage( g, preimage( f, x ) )
+        fg = hom( L, algebraic_closure(QQ), (f ∘ g ∘ gen)(L) )
+        return ( to_field_elem.(arr), fg )
+    else 
+        to_field_elem = x -> preimage( f, x )
+        return ( to_field_elem.(arr), f )
+    end
 end
 
 export to_cyclotomic_field
