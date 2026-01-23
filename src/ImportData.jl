@@ -6,18 +6,16 @@
 # and provide functions to convert qqbar elems to keys and vice versa
 
 # Generate unique ID for a QQBarFieldElem
+export qqb_id
+
 function qqb_id( x::QQBarFieldElem ) 
     mp = minimal_polynomial(x)
-    degstring = string( degree( mp ) )
-    polstring = 
-        replace( 
-            string(mp),  
-            "*" => "", " " => ""  
-        )
+    coeffs = string.( collect( coefficients(mp) ) )
+    us = fill( "_", degree(mp) + 1 )
+    
     numstring = string( rootnum( x ) )
 
-    degstring * "_" * polstring * "_" * numstring
-    
+    stringriffle( coeffs, us ) *  "_" * numstring
 end
 
 function rootnum( x::QQBarFieldElem )
