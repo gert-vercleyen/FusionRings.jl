@@ -369,46 +369,176 @@ function import_ring( filename::String )
 end
 
 
-function export_ring( dir,  fr::FusionRing )
+
+############################################################
+# Exporting Fusion rings
+############################################################
+
+function missing_to_nothing(x)
+    if x !== missing
+        return x
+    else
+        return nothing
+    end
+end
+
+function mttojs( fr::FusionRing )::Vector{Vector{Vector{Int64}}}
+    mt = multiplication_table( fr )
+    r  = rank( fr )
+    [ [ [ mt[i,j,k] for i in 1:r ] for j in 1:r ] for k in 1:r ]
+end
+
+function chtojs( fr::FusionRing )
+    ch = fr.characters
+    if ch !== missing 
+        r  = rank( fr )
+        return [ [ ch[i,j] for i in 1:r ] for j in 1:r ]
+    else
+        return nothing
+    end 
+end
+
+function sfrtojs( fr::FusionRing )
+    missing_to_nothing( fr.sub_fusion_rings )
+end
+
+function psrtojs( fr::FusionRing )
+    "NotImplementedYet" 
+end
+
+function fpdtojs( fr::FusionRing )::String
+    qqb_id( fpdim( fr ) )
+end
+
+function fpdstojs( fr::FusionRing )::Vector{String}
+    [ qqb_id( d ) for d in fpdims( fr ) ]
+end
+
+function tpdtojs( fr::FusionRing )
+    missing_to_nothing( fr.tensor_product_decompositions )
+end
+
+function reim( x::ComplexF64 )::Vector{Float64}
+    [ real(x), imag(x) ]
+end
+
+function reim( x::Float64 )::Vector{Float64}
+    [ x, 0.0 ]
+end
+
+function reim( mat::Matrix{ComplexF64} )::Vector{Vector{Vector{Float64}}}
+    [
+        [
+            reim( r[i] )
+            for i in eachindex( r )
+        ]
+        for r in eachrow( mat )
+    ]
+end
+
+function reim( vv::Vector{Vector{ComplexF64}} )::Vector{Vector{Vector{Float64}}}
+    [ [ reim( coef ) for coef in vec ] for vec in vv ]
+end
+
+function nchtojs( fr::FusionRing )::Union{Vector{Vector{Vector{Float64}}},Nothing}
+    if fr.numeric_characters === missing
+        return nothing 
+    else
+        r = rank( fr )
+        splitchars = reim.( numeric_characters( fr ) )
+        return [ [ splitchars[i,j] for i in 1:r ] for j in 1:r ]
+    end
+end
+
+function npsrtojs( fr::FusionRing )
+    npsr = fr.numeric_projective_SL2Z_reps
+    if npsr !== missing
+        dicts = []
+        for rep in npsr
+            tf = reim(rep["twist_factors"])
+            sm = reim(rep["S_matrix"])
+            push!(
+                dicts,
+                Dict(
+                    "twist_factors" => tf,
+                    "S_matrix"      => sm
+                )
+            )
+        end
+        return dicts
+    else
+        return nothing
+    end
+end
+
+
+function cpropstojs( fr::FusionRing )
+    cp = categories_with_properties( fr )
+    if cp !== missing 
+        return [ [ k, v ] for (k,v) in cp ]
+    else
+        return nothing
+    end
 
 end
 
-export load_frl
-
-function load_frl()
-    path = joinpath( @__DIR__, "data", "FusionRingsJSON" )
-
-    prep_path( fn ) = joinpath( path, fn )
-
-    filenames = prep_path.( readdir(path) )
-
-    [ import_ring( fn ) for fn in filenames ]
+function ctojs( fr::FusionRing )
+    missing_to_nothing( is_categorifiable( fr ) )
 end
 
+function ctstojs( fr::FusionRing )
+    missing_to_nothing( fr.categorifications )
+end
 
-# We want the mult-free rings to be first
-frlsortcrit( c ) = anyonwiki_code(c)[ [ 2, 1, 3, 4 ] ]
+function nfpdtojs( fr::FusionRing )
+    reim( numeric_fpdim(fr) )
+end
 
-export fusion_ring_list
+function nfpdstojs( fr::FusionRing )
+    reim.( numeric_fpdims( fr ) )
+end
 
-fusion_ring_list = sort( load_frl(), by = frlsortcrit )
+function ncrtojs( fr::FusionRing )
+    missing_to_nothing( fr.non_cat_reason )
+end
 
+function write_json( filename::String, data::Dict )
+    open( filename, "w" ) do f
+        JSON.print( f, data )
+    end 
+end
 
-export frl
+export export_ring
 
-frl = fusion_ring_list
+function export_ring( filename::String,  fr::FusionRing )
 
-
-export fusion_ring_dict
-
-fusion_ring_dict = Dict( anyonwiki_code(r) => r for r in frl )
-
-
-export frd
-
-frd = fusion_ring_dict
-
-
-export anyonwiki_code
-
-anyonwiki_code( r, m, nnsd, i ) = frd[ [ r, m, nnsd, i ] ]
+    infostring = "Fusion ring. mult_tab: structure constants. barcode & formal_code: unique identifiers see (DOI: 10.1063/5.0148848). non_trivial_sub_fusion_rings: tuples where the first element = elements of ring that form subring isomorphic to subring identified by second element of the tuple. software: doi of original software used to represent fusion ring. references: doi of paper from which data was obtained. categorifiable: false=not categorifiable, null= unknown. categorifications: if categorifiable then anyonwiki codes of pivotal (braided) fusion cats that categorify ring. numeric_projective_SL2Z_reps: each rep consists of a generalized S-matrix and a vector of vectors representing the ln(diag(T))/(2 pi i) of a generalized T-matrix. Algebraic numbers are encoded as a0_..._an__m where ai are polynomial coefficients and m is root number, ordered via Mathematica's convention."
+    
+    write_json( filename, 
+        Dict(
+        "mult_tab"                            => mttojs( fr )
+       ,"names"                               => names( fr )
+       ,"texnames"                            => tex_names( fr )
+       ,"barcode"                             => string( barcode( fr ) )
+       ,"anyonwiki_code"                      => anyonwiki_code( fr )
+       ,"characters"                          => chtojs( fr )
+       ,"non_trivial_sub_fusion_rings"        => sfrtojs(fr)
+       ,"projective_SL2Z_reps"                => psrtojs( fr )
+       ,"frobenius_perron_dimension"          => fpdtojs( fr )
+       ,"frobenius_perron_dimensions"         => fpdstojs( fr )
+       ,"tensor_product_decompositions"       => tpdtojs( fr )
+       ,"numeric_characters"                  => nchtojs( fr )
+       ,"numeric_projective_SL2Z_reps"        => npsrtojs( fr )
+       ,"numeric_frobenius_perron_dimension"  => nfpdtojs( fr )
+       ,"numeric_frobenius_perron_dimensions" => nfpdstojs( fr )
+       ,"has_categories_with_props"           => cpropstojs( fr )
+       ,"categorifiable"                      => ctojs( fr )
+       ,"categorifications"                   => ctstojs( fr )
+       ,"references"                          => fr.references
+       ,"software"                            => fr.software
+       ,"comments"                            => fr.comments
+       ,"non_categorifiable_reason"           => ncrtojs( fr ) 
+       ,"info"                                => infostring
+        )
+    )
+end
