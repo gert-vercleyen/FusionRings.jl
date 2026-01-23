@@ -23,6 +23,7 @@ struct FusionRing
     references
     software
     comments
+    non_cat_reason
 end
 
 export fusion_ring
