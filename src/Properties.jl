@@ -575,3 +575,19 @@ function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
 end
 
 
+export categories_with_properties
+
+function categories_with_properties( fr::FusionRing )
+    return fr.has_categories_with_props
+end
+
+export is_categorifiable
+
+function is_categorifiable( fr::FusionRing )
+    return fr.categorifiable
+end
+
+
+
+
+
