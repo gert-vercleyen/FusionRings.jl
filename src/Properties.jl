@@ -489,7 +489,6 @@ function is_commutative(fr::FusionRing)
     true
 end
 
-
 """
     conjugate_element(fr, a) -> Int
 
