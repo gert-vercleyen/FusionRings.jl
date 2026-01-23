@@ -228,9 +228,31 @@ function decompositions(r::FusionRing,product="TensorProduct")::Array{FusionRing
   end
 end
 
-function adjoint_fusion_ring(r::FusionRing)::FusionRing
-  
+export adjoint_fusion_ring
+
+function adjoint_fusion_ring(ring::FusionRing)::Tuple{Vector{Int},FusionRing}
+    # d = CC[ring] in Anyonica
+    d(i) = _dual_index(ring, i)
+
+    # el = { c : ∃(i,j,c) with j = d(i) and N_{i,j}^c > 0 } (Anyonica- NZSC filter)
+    el_seen = falses(rank(ring))
+    for (i, j, c) in nzsc(ring)
+        if j == d(i)
+            el_seen[c] = true
+        end
+    end
+    el = findall(el_seen)
+
+    # generatedEl = fusion-closure of el (FixedPoint … Union … outcomes)
+    generatedEl = _fusion_closure(ring, el)
+
+    if length(generatedEl) == rank(ring)
+        return (generatedEl, ring)
+    else
+        return (generatedEl, _restrict_subring(ring, generatedEl; check_closed = true))
+    end
 end
+
 
 function upper_central_series(r::FusionRing)::Array{FusionRing,1}
   
