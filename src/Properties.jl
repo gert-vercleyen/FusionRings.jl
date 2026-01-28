@@ -588,6 +588,182 @@ function is_categorifiable( fr::FusionRing )
 end
 
 
+# generate all k-subsets of 1:n without external deps - could not find corresponding combinatorics function
+# so can be replaced by function once found
+function _k_subsets(n::Int, k::Int)
+    out = Vector{Vector{Int}}()
+    buf = Vector{Int}(undef, k)
+    function go(start::Int, depth::Int)
+        if depth > k
+            push!(out, copy(buf)); return
+        end
+        # ensure enough remaining
+        last = n - (k - depth)
+        for v in start:last
+            buf[depth] = v
+            go(v + 1, depth + 1)
+        end
+    end
+    k == 0 && return [Int[]]
+    (k < 0 || k > n) && return out
+    go(1,1)
+    out
+end
+
+#internal-closed subsets of size k (must contain unit=1) 
+function _internal_closed_subsets(fr::FusionRing, k::Int)
+    r = rank(fr)
+    (k == 0 || k > r) && return Vector{Vector{Int}}()
+    #  require unit in subset
+    candidates = [s for s in _k_subsets(r, k) if first(s) == 1]
+    filter(s -> _internal_multiplication(fr, s), candidates)
+end
+
+function _internal_multiplication(fr::FusionRing, S::Vector{Int})
+    Sset = Set(S)
+    @inbounds for i in S, j in S
+        for (c, m) in tensor_product(fr, i, j)
+            m == 0 && continue
+            c in Sset || return false
+        end
+    end
+    true
+end
+
+# group by diagonal-channel counts: keys are counts of nonzeros in N[i,i,:] 
+function _diag_channel_groups(N::Array{Int,3})
+    r = size(N,1)
+    key = Vector{Int}(undef, r)
+    @inbounds for i in 1:r
+        cnt = 0
+        for c in 1:r
+            N[i,i,c] > 0 && (cnt += 1)
+        end
+        key[i] = cnt
+    end
+    dict = Dict{Int,Vector{Int}}()
+    @inbounds for i in 1:r
+        push!(get!(dict, key[i], Int[]), i)
+    end
+    collect(values(dict))
+end
+
+# apply permutation P on all three indices: A'[i,j,k] = A[P[i],P[j],P[k]]
+function _permute_multtab(A::Array{Int,3}, P::Vector{Int})
+    r = size(A,1)
+    B = similar(A)
+    @inbounds for i in 1:r, j in 1:r, k in 1:r
+        B[i,j,k] = A[P[i], P[j], P[k]]
+    end
+    B
+end
+
+function _permutation_vector_equiv(A::Array{Int,3}, B::Array{Int,3})
+    r = size(A,1); size(B,1) == r || return nothing
+
+    grpA = _diag_channel_groups(A)
+    grpB = _diag_channel_groups(B)
+    # multiset of group sizes must match
+    sort!(map(length, grpA)) == sort!(map(length, grpB)) || return nothing
+
+    used = falses(length(grpB))
+    cur  = Vector{Int}(undef, r)
+
+    # enforce unit -> unit if 1 exists (it always should)
+    cur[1] = 1
+
+    function backtrack(gidx::Int)
+        if gidx > length(grpA)
+            return _permute_multtab(A, cur) == B
+        end
+        GA = grpA[gidx]
+        # candidate B-groups of equal size
+        for j in eachindex(grpB)
+            if used[j] || length(grpB[j]) != length(GA)
+                continue
+            end
+            used[j] = true
+            # try all bijections within the group
+            for σ in Base.Iterators.permutations(grpB[j])
+                # enforce 1 -> 1 if 1 in GA
+                if 1 in GA
+                    # image of 1 must be 1
+                    σ[findfirst(==(1), GA)] == 1 || continue
+                end
+                # set partial mapping for this group
+                for (u, v) in zip(GA, σ)
+                    cur[u] = v
+                end
+                backtrack(gidx + 1) && return true
+                # overwrite these entries next loop
+            end
+            used[j] = false
+        end
+        return false
+    end
+
+    backtrack(1) ? cur : nothing
+end
+
+
+
+export which_injection
+function which_injection(subring::FusionRing, ring::FusionRing)
+    rs = rank(subring); rr = rank(ring)
+    rs > rr && return nothing
+    Nbig = multiplication_table(ring)
+    Nsub = multiplication_table(subring)
+    for S in _internal_closed_subsets(ring, rs)
+        Nres = @views Nbig[S, S, S]
+        if (perm = _permutation_vector_equiv(Nsub, Nres)) !== nothing
+            inj = Dict{Int,Int}()
+            @inbounds for i in 1:rs
+                inj[i] = S[perm[i]]
+            end
+            return inj
+        end
+    end
+    nothing
+end
+
+export fusion_ring_automorphisms
+function fusion_ring_automorphisms(fr::FusionRing)
+    N = multiplication_table(fr)
+    r = size(N,1)
+    groups = _diag_channel_groups(N)
+    perms  = Vector{Vector{Int}}()
+    cur    = Vector{Int}(undef, r)
+
+    # enforce unit mapping
+    cur[1] = 1
+
+    function backtrack(gidx::Int)
+        if gidx > length(groups)
+            _permute_multtab(N, cur) == N && push!(perms, copy(cur))
+            return
+        end
+        G = groups[gidx]
+        for σ in Base.Iterators.permutations(G)
+            # if 1 is in  group,  image must be 1
+            if 1 in G
+                σ[findfirst(==(1), G)] == 1 || continue
+            end
+            for (u, v) in zip(G, σ)
+                cur[u] = v
+            end
+            backtrack(gidx + 1)
+        end
+    end
+
+    backtrack(1)
+    unique!(perms)
+    sort!(perms, by = p -> (sum(p), p))
+    perms
+end
+
+
+
+
 
 
 
