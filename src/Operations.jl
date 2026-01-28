@@ -30,6 +30,12 @@ function fusion_product(fr::FusionRing, a::Int, b::Int)
 end
 
 
+
+# temporary compatibility
+tensor_product(fr::FusionRing, a::Int, b::Int) = fusion_product(fr, a, b)
+
+
+
 """permute(r, perm) – return a new `FusionRing` with all data
     permuted by `perm`.  `perm[1]` **must** equal 1 to keep the vacuum first."""
 function permute(r::FusionRing, perm::Vector{Int})::FusionRing
@@ -122,6 +128,9 @@ function tensor_product(r1::FusionRing, r2::FusionRing)::FusionRing
         frobenius_perron_dimensions = fpdims_new
     )
 end
+
+
+
 
 "Return vector of simple indices with positive multiplicity in `a ⊗ b`."
 function fusion_outcomes(fr::FusionRing, a::Int, b::Int)::Vector{Int}

@@ -238,9 +238,65 @@ function is_nilpotent(r::FusionRing)::Bool
   
 end
 
-function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
-  
+
+export adjoint_irreps
+
+"""
+    adjoint_irreps(fr::FusionRing) -> Vector{Vector{Int}}
+
+Return  partition of  simple objects of `fr` into subsets that are
+stable under left and right action by  adjoint subring.
+
+"""
+function adjoint_irreps(fr::FusionRing)
+    S, adj = adjoint_fusion_ring(fr)        # S::Vector{Int}, adj::FusionRing
+    Sset = collect(S)
+    r = rank(fr)
+
+    # One step of left/right action by S on a set X:
+    @inline function _act_pair(X::Vector{Int})
+        seen = falses(r)
+        # left: a cross x
+        @inbounds for a in Sset, x in X
+            for (c, m) in tensor_product(fr, a, x)
+                m == 0 && continue
+                seen[c] = true
+            end
+        end
+        # right: x cross a
+        @inbounds for x in X, a in Sset
+            for (c, m) in tensor_product(fr, x, a)
+                m == 0 && continue
+                seen[c] = true
+            end
+        end
+        return findall(seen)
+    end
+
+    # Fixed point closure under combined action:
+    @inline function _closure_from(seed::Int)
+        cur = [seed]
+        while true
+            nxt = sort!(unique!(_act_pair(cur) ∪ cur))
+            length(nxt) == length(cur) && return cur
+            cur = nxt
+        end
+    end
+
+    # Build blocks and deduplicate
+    blocks = Vector{Vector{Int}}()
+    covered = falses(r)
+    @inbounds for e in 1:r
+        covered[e] && continue
+        blk = _closure_from(e) |> sort
+        push!(blocks, blk)
+        covered[blk] .= true
+    end
+    # Normalized: sort blocks lexicographically
+    sort!(blocks, by = x -> (length(x), x))
+    return blocks
 end
+
 
 function universal_grading(r::FusionRing)
   
