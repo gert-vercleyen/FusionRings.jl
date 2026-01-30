@@ -642,6 +642,7 @@ function _diag_channel_groups(N::Array{Int,3})
         end
         key[i] = cnt
     end
+	#is incorrect fix
     dict = Dict{Int,Vector{Int}}()
     @inbounds for i in 1:r
         push!(get!(dict, key[i], Int[]), i)
