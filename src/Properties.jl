@@ -661,6 +661,7 @@ end
 
 function _permutation_vector_equiv(A::Array{Int,3}, B::Array{Int,3})
     r = size(A,1); size(B,1) == r || return nothing
+	#think of something else instead of nothing, people might be confused if they run code and nothing appears
 
     grpA = _diag_channel_groups(A)
     grpB = _diag_channel_groups(B)
