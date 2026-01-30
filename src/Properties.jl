@@ -638,6 +638,7 @@ function _diag_channel_groups(N::Array{Int,3})
         cnt = 0
         for c in 1:r
             N[i,i,c] > 0 && (cnt += 1)
+			#can replace with sum 
         end
         key[i] = cnt
     end
