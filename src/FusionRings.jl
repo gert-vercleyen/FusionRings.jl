@@ -15,19 +15,21 @@ include("ImportData.jl")
 include("FormattingAndPrinting.jl")
 end
 
-# Internal helpers #
 
-# dual index via conjugation matrix (Anyonica's CC)
-_dual_index(fr::FusionRing, i::Int)::Int =
-    findfirst(==(1), conjugation_matrix(fr)[i, :])::Int
+# TODO: these functions don't belong here. They should be part of the Properties.jl
+# file 
 
+
+# TODO: we already have fusion_product & fusion_outcomes. You should be able to 
+# get all info from one of those. It becomes a bit of a mess if we design a new 
+# function for every type of desired output
 # support of i ⊗ j (Anyonica- FusionOutcomes)
 function _fusion_outcomes(fr::FusionRing, i::Int, j::Int)::Vector{Int}
     N = multiplication_table(fr)
     @views findall(>(0), N[i, j, :])
 end
 
-# closure of a seed set under fusion (used by AdjointFusionRing)
+# closure of a subset of elements of a fusion ring under fusion
 function _fusion_closure(fr::FusionRing, S0::Vector{Int})::Vector{Int}
     r = rank(fr)
     seen = falses(r)
@@ -69,15 +71,7 @@ function _restrict_subring(fr::FusionRing, S::Vector{Int}; check_closed::Bool = 
         end
     end
 
-    # NOTE TO SELF : adjust the constructor keyword arguments if  FusionRing struct differs.
-    FusionRing(
-        Nsub;
-        # preserve metadata if they exist (slice per-object arrays)
-        names      = hasproperty(fr, :names)     ? fr.names      : missing,
-        texnames   = hasproperty(fr, :texnames)  ? fr.texnames   : missing,
-        labels     = hasproperty(fr, :labels)    ? fr.labels     : missing,
-        frobenius_perron_dimensions =
-            fr.frobenius_perron_dimensions === missing ? missing :
-            fr.frobenius_perron_dimensions[S],
-    )
+    # TODO: might want to conserve as much information as possible, but 
+    # it's better to wait until all fields of the FusionRing struct are finalized
+    fusion_ring( Nsub )
 end
