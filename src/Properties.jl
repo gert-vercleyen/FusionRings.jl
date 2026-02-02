@@ -151,7 +151,7 @@ export nsd
 
 nsd = num_self_dual
 
-export num_non_self 
+export num_non_self_dual
 
 function num_non_self_dual(r::FusionRing)::Int
   last( nsdnsd(r) )
