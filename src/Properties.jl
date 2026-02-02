@@ -230,9 +230,29 @@ function adjoint_fusion_ring(r::FusionRing)::FusionRing
   
 end
 
-function upper_central_series(r::FusionRing)::Array{FusionRing,1}
-  
+export upper_central_series
+
+function upper_central_series(fr::FusionRing)
+    chain = Tuple{Vector{Int},FusionRing}[]
+    push!(chain, (collect(1:rank(fr)), fr))
+
+    while true
+        S, adj = adjoint_fusion_ring(last(chain)[2])
+        # Stop if stable (same subring as previous) or reached {1}
+        if adj === last(chain)[2]
+            break
+        end
+        push!(chain, (S, adj))
+        if length(S) == 1
+            break
+        end
+    end
+
+    # Anyonica -  DeleteDuplicatesBy(..., Last) Since  breaks on stability,
+    # trivial repeats shouldn't occur;  chain is already deduplicated by Last.
+    chain
 end
+
 
 function is_nilpotent(r::FusionRing)::Bool
   
