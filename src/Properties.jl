@@ -151,7 +151,7 @@ export nsd
 
 nsd = num_self_dual
 
-export num_non_self_dual 
+export num_non_self 
 
 function num_non_self_dual(r::FusionRing)::Int
   last( nsdnsd(r) )
@@ -232,7 +232,7 @@ export adjoint_fusion_ring
 
 function adjoint_fusion_ring(ring::FusionRing)::Tuple{Vector{Int},FusionRing}
     # d = CC[ring] in Anyonica
-    d(i) = _dual_index(ring, i)
+    d(i) = conjugate_element(ring, i)
 
     # el = { c : ∃(i,j,c) with j = d(i) and N_{i,j}^c > 0 } (Anyonica- NZSC filter)
     el_seen = falses(rank(ring))
@@ -592,9 +592,9 @@ function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
     # Seed S0 with the union of supports of a ⊗ b ⊗ a* ⊗ b*
     seen = falses(r)
     @inbounds for a in A
-        aᵗ = _dual_index(fr, a)
+        aᵗ = conjugate_element(fr, a)
         for b in B
-            bᵗ = _dual_index(fr, b)
+            bᵗ = conjugate_element(fr, b)
 
             # First multiply a ⊗ b
             for (u, mu) in tensor_product(fr, a, b)
