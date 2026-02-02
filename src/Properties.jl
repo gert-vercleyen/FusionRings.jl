@@ -254,8 +254,12 @@ function upper_central_series(fr::FusionRing)
 end
 
 
-function is_nilpotent(r::FusionRing)::Bool
-  
+export is_nilpotent_fusion_ring
+
+function is_nilpotent_fusion_ring(fr::FusionRing)::Bool
+    ucs = upper_central_series(fr)
+    S_last = first(last(ucs))          # the element set in the last pair
+    length(S_last) == 1 && S_last[1] == 1
 end
 
 function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
