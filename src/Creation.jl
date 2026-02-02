@@ -23,6 +23,7 @@ struct FusionRing
     references
     software
     comments
+    non_cat_reason
 end
 
 export fusion_ring
@@ -84,6 +85,7 @@ function fusion_ring(
     references                          = missing,
     software                            = missing,
     comments                            = missing,
+    non_cat_reason                      = missing,
     skip_check                          = false,
     )
 
@@ -122,6 +124,7 @@ function fusion_ring(
         ,references
         ,software
         ,comments
+        ,non_cat_reason
     )
 end
 

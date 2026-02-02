@@ -9,45 +9,6 @@ function multiplication_table(r::FusionRing)::Array{Int,3}
   return r.multiplication_table
 end
 
-
-
-#function print_multiplication_table(r::FusionRing)
-#  rk = rank(r)
-#  mt = multiplication_table(r)
-#
-#  tab = fill( "", rk, rk )
-#  for i in 1:rk, j in 1:rk
-#    tab[i,j] = row_to_string(r,mt[i,j,:])
-#  end
-#  tab
-#end
-#
-#export row_to_string
-#
-#function row_to_string(r::FusionRing, row)::String
-#  n             = length(row)
-#  el_names      = labels(r)
-#  non_zero_ind  = findall(i -> row[i] > 0, 1:n)
-#  to_string(i)  = element_to_string(row[i], el_names[i])
-#
-#  join(
-#    map(to_string, non_zero_ind),
-#    " ⊕ "
-#  )
-#end
-
-function element_to_string(mult,elem)::String
-  if mult == 0 
-    return ""
-  elseif mult == 1
-    return elem
-  else 
-    return string(mult) * " " * elem 
-  end
-end
-
-pmt = print_multiplication_table
-
 export rank
 
 function rank(r::FusionRing)::Int
@@ -181,7 +142,7 @@ end
 
 export barcode 
 
-function barcode(r::FusionRing)::Int
+function barcode(r::FusionRing)
   return r.barcode
 end
 
@@ -191,13 +152,43 @@ end
 export sub_fusion_rings
 
 function sub_fusion_rings(r::FusionRing)
-  return r.sub_fusion_rings
+    dictvec = r.sub_fusion_rings
+    if dictvec !== missing
+        [
+            Dict(
+                "injection"   => dict["injection"],
+                "fusion_ring" => awc(dict["anyonwiki_code"])
+            )
+            for dict in dictvec
+        ]
+    else
+        error("Method sub_fusion_rings not full implemented yet")
+    end
+# TODO: still uses labels and doesn't return injections
+#function sub_fusion_rings(fr::FusionRing)
+#    L = labels(fr); r = length(L)
+#    sets = Vector{Vector{String}}()
+#    for mask in 1:(1<<(r-1))-1
+#        subset = [L[1]]
+#        for i in 2:r
+#            if ((mask >> (i-2)) & 1) == 1
+#                push!(subset, L[i])
+#            end
+#        end
+#        if is_sub_fusion_ring(fr, subset) && length(subset)<r
+#            push!(sets, subset)
+#        end
+#    end
+#    sets
+#end
 end
 
 function sub_ring_tables(mat::Array{Int,2})
 
 end
 
+# injection_form( subring, ring ) returns the vector of elements of
+# ring that form subring in the correct order  
 function injection_form( subring::FusionRing, ring::FusionRing )
 
 end
@@ -220,21 +211,48 @@ end
 
 export decompositions
 
-function decompositions(r::FusionRing,product="TensorProduct")::Array{FusionRing,1}
-  if product == "TensorProduct"
-    return r.tensor_product_decompositions
-  else 
-    return error("Only tensor product decompositions are defined at the moment.")
-  end
+function decompositions( fr::FusionRing, product="TensorProduct" )#::Vector{ Vector{FusionRing} }
+    product == "TensorProduct" ||  error("Only tensor product decompositions are defined at the moment.")
+
+    tpd = fr.tensor_product_decompositions
+    if tpd !== missing
+        [ [ awc( code ) for code in decomp ] for decomp in tpd ]
+    else
+        tensor_product_decompositions(fr)
+    end
+end
+
+function tensor_product_decompositions( r::FusionRing )
+    error("Not implemented yet.")
 end
 
 function adjoint_fusion_ring(r::FusionRing)::FusionRing
   
 end
 
-function upper_central_series(r::FusionRing)::Array{FusionRing,1}
-  
+export upper_central_series
+
+function upper_central_series(fr::FusionRing)
+    chain = Tuple{Vector{Int},FusionRing}[]
+    push!(chain, (collect(1:rank(fr)), fr))
+
+    while true
+        S, adj = adjoint_fusion_ring(last(chain)[2])
+        # Stop if stable (same subring as previous) or reached {1}
+        if adj === last(chain)[2]
+            break
+        end
+        push!(chain, (S, adj))
+        if length(S) == 1
+            break
+        end
+    end
+
+    # Anyonica -  DeleteDuplicatesBy(..., Last) Since  breaks on stability,
+    # trivial repeats shouldn't occur;  chain is already deduplicated by Last.
+    chain
 end
+
 
 export is_nilpotent_fusion_ring
 
@@ -253,6 +271,7 @@ function universal_grading(r::FusionRing)
 end
 
 function all_gradings(r::FusionRing)
+
 end
 
 function commutator(r::FusionRing)
@@ -263,7 +282,7 @@ export characters
 
 function characters(ring::FusionRing; use_numerics = true )
   if !(ring.characters === missing)
-    return ring.characters
+    return from_qqb_id( ring.characters )
   elseif !FusionRings.is_commutative(ring) 
     error("Calculation of characters for non-commutative fusion ring is not implemented yet.")
   elseif rank(ring) == 1
@@ -291,9 +310,9 @@ function characters(ring::FusionRing; use_numerics = true )
 end
 
 function numeric_diagonalizing_matrix( mats, tries::Int=64, tol::Real=1e-12 )
-    r = mats |> length
+    r = length( mats )
 
-    m, n = mats |> first |> size
+    m, n = size( first( mats ) )
 
     function is_diagonalizing_matrix( mat, mats )
         imat = inv(mat)
@@ -455,24 +474,18 @@ end
 
 # finds diagonalizing matrix using floating point arithmetic
 
-export sl_2_ZZ_reps
+export projective_SL_2_ZZ_reps
 
-function sl_2_ZZ_reps(r::FusionRing)
-  return r.modular_data
+function projective_SL_2_ZZ_reps( fr::FusionRing )
+    md = fr.projective_SL2Z_reps
+    if md !== missing 
+        return md
+    else
+        error("No data available and calculation not implemented yet")
+    end
 end
 
-function s_matrices(r::FusionRing)
-
-end
-  
-function normalized_s_matrices(r::FusionRing)
-  
-end
-
-function twist_factors(r::FusionRing)
-
-end
-
+export numeric_fpdims
 
 function numeric_fpdims(fr::FusionRing)
     r = rank(fr)
@@ -487,6 +500,8 @@ function numeric_fpdims(fr::FusionRing)
     v ./ v[1]
 end
 
+export numeric_fpdim
+
 numeric_fpdim(fr::FusionRing) = sum(x->x*x, numeric_fpdims(fr))
 
 function is_commutative(fr::FusionRing)
@@ -497,7 +512,6 @@ function is_commutative(fr::FusionRing)
     end
     true
 end
-
 
 """
     conjugate_element(fr, a) -> Int
@@ -517,23 +531,6 @@ function conjugate_element(fr::FusionRing, a)
 end
 
 
-# TODO: still uses labels and doesn't return injections
-#function sub_fusion_rings(fr::FusionRing)
-#    L = labels(fr); r = length(L)
-#    sets = Vector{Vector{String}}()
-#    for mask in 1:(1<<(r-1))-1
-#        subset = [L[1]]
-#        for i in 2:r
-#            if ((mask >> (i-2)) & 1) == 1
-#                push!(subset, L[i])
-#            end
-#        end
-#        if is_sub_fusion_ring(fr, subset) && length(subset)<r
-#            push!(sets, subset)
-#        end
-#    end
-#    sets
-#end
 
 function is_sub_fusion_ring(fr::FusionRing, S::Vector)
     # Accept Vector{String} preferred, but allow symbols via conversion
@@ -600,5 +597,21 @@ function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
     S = _fusion_closure(fr, S0)
     _restrict_subring(fr, S; check_closed=true)
 end
+
+
+export categories_with_properties
+
+function categories_with_properties( fr::FusionRing )
+    return fr.has_categories_with_props
+end
+
+export is_categorifiable
+
+function is_categorifiable( fr::FusionRing )
+    return fr.categorifiable
+end
+
+
+
 
 

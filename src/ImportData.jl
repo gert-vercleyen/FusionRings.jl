@@ -6,19 +6,19 @@
 # and provide functions to convert qqbar elems to keys and vice versa
 
 # Generate unique ID for a QQBarFieldElem
+export qqb_id
+
 function qqb_id( x::QQBarFieldElem ) 
     mp = minimal_polynomial(x)
-    degstring = string( degree( mp ) )
-    polstring = 
-        replace( 
-            string(mp),  
-            "*" => "", " " => ""  
-        )
+    coeffs = string.( collect( coefficients(mp) ) )
+    us = fill( "_", degree(mp) + 1 )
+    
     numstring = string( rootnum( x ) )
 
-    degstring * "_" * polstring * "_" * numstring
-    
+    stringriffle( coeffs, us ) *  "_" * numstring
 end
+
+qqb_id( arr::Array{QQBarFieldElem} ) = qqb_id.(arr)
 
 function rootnum( x::QQBarFieldElem )
     p   = minimal_polynomial( x ) 
@@ -44,38 +44,44 @@ function save_qqb_num( x::QQBarFieldElem )
     return nothing
 end
 
-# Load the dictionary of qqbar elems 
-function load_qqb_num_dict()
-    datadir = joinpath( @__DIR__, "data", "Numbers", "QQBarFieldElems" )
-    ids     = Oscar.load( joinpath( datadir, "idsqqbfieldelems.mrdi") )
-    nums    = Oscar.load( joinpath( datadir, "qqbfieldelems.mrdi") )
-    
-    Dict( ids[i] => nums[i] for i in 1:length(ids) )
-end
-
-qqb_dict = load_qqb_num_dict()
+# Load the dictionary of qqbar elems
 
 # Get from dict
-getfromqqbdict( s::String ) = qqb_dict[s]
-getfromqqbdict( a::Array{String} ) = gfqqbd.(a)
+export from_qqb_id
+
+from_qqb_id( s::String ) = qqb_dict[s]
+from_qqb_id( a::Array{String} ) = from_qqb_id.(a)
 
 ############################################################
-# Exporting and importing fusion rings
+# Importing fusion rings
 ############################################################
 # The fusion rings are stored as json files. Not all data 
 # types (e.g. complex numbers) are supported by JSON so we 
 # had to store those using a variety of hacks. 
 # The following functions convert the stored data back 
 # to their proper types.
+#
+# TODO: some of the if clauses below are necessary for legacy
+# compatibility. Once all json files have the correct format
+# we should remove it since it slows down the import
 
 # formal code
 function fcfromjs( js::JSON.Object{String, Any} )::Vector{Int64}
-  fc = js["formal_code"]
-  if length(fc) == 0
-    missing
-  else
-    [ fc[i] for i in 1:4 ]  
-  end
+    k = keys( js )
+
+    if "formal_code" ∈ k
+        fc = js["formal_code"]
+    elseif "anyonwiki_code" ∈ k
+        fc = js["anyonwiki_code"]
+    else
+        return missing
+    end
+
+    if length(fc) == 0
+        missing
+    else
+        [ fc[i] for i in 1:4 ]  
+    end
 end
 
 # mult tab
@@ -120,13 +126,14 @@ function sfrfromjs(js::JSON.Object{String, Any})
 
     intData =
         [
-        [ Int.( vec ) for vec in sr ]
-        for sr in srs
+            [ Int.( vec ) for vec in sr ]
+            for sr in srs
         ]
+
     [
         Dict(
-        "injection"       => data[1],
-        "anyonwiki_code"  => data[2]
+            "injection"       => data[1],
+            "anyonwiki_code"  => data[2]
         )
         for data ∈ intData
     ]
@@ -164,8 +171,6 @@ function nfpdfromjs(js::JSON.Object{String, Any})::ComplexF64
     vec_to_cflt( js["numeric_frobenius_perron_dimension"] )
 end
 
-# TODO: only works for cats given by anyonwiki_code
-# categorifications
 function cfromjs(js::JSON.Object{String, Any})
   # Known to be non categorifiable
   if js["categorifiable"] === false
@@ -182,19 +187,29 @@ function cfromjs(js::JSON.Object{String, Any})
 
 end
 
+# TODO: only works for cats given by anyonwiki_code
+# categorifications
 function ctsfromjs(js::JSON.Object{String, Any})
-  # Known to be non categorifiable
-  if js["categorifiable"] === false
-    return Vector{Int}[]
-  end
+    # Known to be non categorifiable
+    if js["categorifiable"] === false
+        return Vector{Int64}[]
+    end
 
-  # Nothing known about categorifiability
-  if js["categorifiable"] === nothing 
-    return missing
-  end
+    # Nothing known about categorifiability
+    if js["categorifiable"] === nothing 
+        return missing
+    end
 
-  # Has fusion categories
-  [ Int.(code) for code in js["categorifications"]["categories"] ]
+    # Has fusion categories
+    cats = js["categorifications"]
+    k    = keys( cats )
+
+    # Legacy compatibility
+    if "categories" ∈ k
+        [ Int.(code) for code in cats["categories"] ]
+    else
+        [ Int.(code) for code in cats ]
+    end
 end
 
 function ctpfromjs(js::JSON.Object{String, Any})
@@ -218,6 +233,7 @@ end
 # MethodError: Cannot `convert` an object of type Vector{Dict{String, Array}} to an object of type Dict{String, Array}
 # The error is not reproducible when using the REPL
 function npsrfromjs(js::JSON.Object{String, Any})#::Vector{Dict{String, Array}}
+    try
     npsr = js["numeric_projective_SL2Z_reps"]
     if npsr == Any[]
         return Dict{String, Array}[]
@@ -238,6 +254,9 @@ function npsrfromjs(js::JSON.Object{String, Any})#::Vector{Dict{String, Array}}
             )
         end
         return dicts
+    end
+    catch e
+        return missing
     end
 end
 
@@ -261,19 +280,24 @@ end
 
 # import projective SL2Z reps
 function psrfromjs(js::JSON.Object{String, Any})
-    try
+    k = keys( js )
+    if "projective_SL2Z_reps" ∈ k
         psr = js["projective_SL2Z_reps"]
-    catch e
+    else
         return missing
     end
 
-    if psr == Any[]
+    if psr == "NotImplementedYet"
+        return missing
+    end
+
+    if psr == Any[] 
         return Dict{String, Array}[]
     else
         dicts = Dict{String, Array}[]
-        for rep in eachindex( npsr )
-            sm = npsr[rep]["SMatrix"];
-            tf = npsr[rep]["TwistFactors"];
+        for rep in eachindex( psr )
+            sm = psr[rep]["SMatrix"];
+            tf = psr[rep]["TwistFactors"];
             r  = size(sm,1);
             push!(
                 dicts,
@@ -345,46 +369,176 @@ function import_ring( filename::String )
 end
 
 
-function export_ring( dir,  fr::FusionRing )
+
+############################################################
+# Exporting Fusion rings
+############################################################
+
+function missing_to_nothing(x)
+    if x !== missing
+        return x
+    else
+        return nothing
+    end
+end
+
+function mttojs( fr::FusionRing )::Vector{Vector{Vector{Int64}}}
+    mt = multiplication_table( fr )
+    r  = rank( fr )
+    [ [ [ mt[i,j,k] for i in 1:r ] for j in 1:r ] for k in 1:r ]
+end
+
+function chtojs( fr::FusionRing )
+    ch = fr.characters
+    if ch !== missing 
+        r  = rank( fr )
+        return [ [ ch[i,j] for i in 1:r ] for j in 1:r ]
+    else
+        return nothing
+    end 
+end
+
+function sfrtojs( fr::FusionRing )
+    missing_to_nothing( fr.sub_fusion_rings )
+end
+
+function psrtojs( fr::FusionRing )
+    "NotImplementedYet" 
+end
+
+function fpdtojs( fr::FusionRing )::String
+    qqb_id( fpdim( fr ) )
+end
+
+function fpdstojs( fr::FusionRing )::Vector{String}
+    [ qqb_id( d ) for d in fpdims( fr ) ]
+end
+
+function tpdtojs( fr::FusionRing )
+    missing_to_nothing( fr.tensor_product_decompositions )
+end
+
+function reim( x::ComplexF64 )::Vector{Float64}
+    [ real(x), imag(x) ]
+end
+
+function reim( x::Float64 )::Vector{Float64}
+    [ x, 0.0 ]
+end
+
+function reim( mat::Matrix{ComplexF64} )::Vector{Vector{Vector{Float64}}}
+    [
+        [
+            reim( r[i] )
+            for i in eachindex( r )
+        ]
+        for r in eachrow( mat )
+    ]
+end
+
+function reim( vv::Vector{Vector{ComplexF64}} )::Vector{Vector{Vector{Float64}}}
+    [ [ reim( coef ) for coef in vec ] for vec in vv ]
+end
+
+function nchtojs( fr::FusionRing )::Union{Vector{Vector{Vector{Float64}}},Nothing}
+    if fr.numeric_characters === missing
+        return nothing 
+    else
+        r = rank( fr )
+        splitchars = reim.( numeric_characters( fr ) )
+        return [ [ splitchars[i,j] for i in 1:r ] for j in 1:r ]
+    end
+end
+
+function npsrtojs( fr::FusionRing )
+    npsr = fr.numeric_projective_SL2Z_reps
+    if npsr !== missing
+        dicts = []
+        for rep in npsr
+            tf = reim(rep["twist_factors"])
+            sm = reim(rep["S_matrix"])
+            push!(
+                dicts,
+                Dict(
+                    "twist_factors" => tf,
+                    "S_matrix"      => sm
+                )
+            )
+        end
+        return dicts
+    else
+        return nothing
+    end
+end
+
+
+function cpropstojs( fr::FusionRing )
+    cp = categories_with_properties( fr )
+    if cp !== missing 
+        return [ [ k, v ] for (k,v) in cp ]
+    else
+        return nothing
+    end
 
 end
 
-export load_frl
-
-function load_frl()
-    path = joinpath( @__DIR__, "data", "FusionRingsJSON" )
-
-    prep_path( fn ) = joinpath( path, fn )
-
-    filenames = prep_path.( readdir(path) )
-
-    [ import_ring( fn ) for fn in filenames ]
+function ctojs( fr::FusionRing )
+    missing_to_nothing( is_categorifiable( fr ) )
 end
 
+function ctstojs( fr::FusionRing )
+    missing_to_nothing( fr.categorifications )
+end
 
-# We want the mult-free rings to be first
-frlsortcrit( c ) = anyonwiki_code(c)[ [ 2, 1, 3, 4 ] ]
+function nfpdtojs( fr::FusionRing )
+    reim( numeric_fpdim(fr) )
+end
 
-export fusion_ring_list
+function nfpdstojs( fr::FusionRing )
+    reim.( numeric_fpdims( fr ) )
+end
 
-fusion_ring_list = sort( load_frl(), by = frlsortcrit )
+function ncrtojs( fr::FusionRing )
+    missing_to_nothing( fr.non_cat_reason )
+end
 
+function write_json( filename::String, data::Dict )
+    open( filename, "w" ) do f
+        JSON.print( f, data )
+    end 
+end
 
-export frl
+export export_ring
 
-frl = fusion_ring_list
+function export_ring( filename::String,  fr::FusionRing )
 
-
-export fusion_ring_dict
-
-fusion_ring_dict = Dict( anyonwiki_code(r) => r for r in frl )
-
-
-export frd
-
-frd = fusion_ring_dict
-
-
-export anyonwiki_code
-
-anyonwiki_code( r, m, nnsd, i ) = frd[ [ r, m, nnsd, i ] ]
+    infostring = "Fusion ring. mult_tab: structure constants. barcode & formal_code: unique identifiers see (DOI: 10.1063/5.0148848). non_trivial_sub_fusion_rings: tuples where the first element = elements of ring that form subring isomorphic to subring identified by second element of the tuple. software: doi of original software used to represent fusion ring. references: doi of paper from which data was obtained. categorifiable: false=not categorifiable, null= unknown. categorifications: if categorifiable then anyonwiki codes of pivotal (braided) fusion cats that categorify ring. numeric_projective_SL2Z_reps: each rep consists of a generalized S-matrix and a vector of vectors representing the ln(diag(T))/(2 pi i) of a generalized T-matrix. Algebraic numbers are encoded as a0_..._an__m where ai are polynomial coefficients and m is root number, ordered via Mathematica's convention."
+    
+    write_json( filename, 
+        Dict(
+        "mult_tab"                            => mttojs( fr )
+       ,"names"                               => names( fr )
+       ,"texnames"                            => tex_names( fr )
+       ,"barcode"                             => string( barcode( fr ) )
+       ,"anyonwiki_code"                      => anyonwiki_code( fr )
+       ,"characters"                          => chtojs( fr )
+       ,"non_trivial_sub_fusion_rings"        => sfrtojs(fr)
+       ,"projective_SL2Z_reps"                => psrtojs( fr )
+       ,"frobenius_perron_dimension"          => fpdtojs( fr )
+       ,"frobenius_perron_dimensions"         => fpdstojs( fr )
+       ,"tensor_product_decompositions"       => tpdtojs( fr )
+       ,"numeric_characters"                  => nchtojs( fr )
+       ,"numeric_projective_SL2Z_reps"        => npsrtojs( fr )
+       ,"numeric_frobenius_perron_dimension"  => nfpdtojs( fr )
+       ,"numeric_frobenius_perron_dimensions" => nfpdstojs( fr )
+       ,"has_categories_with_props"           => cpropstojs( fr )
+       ,"categorifiable"                      => ctojs( fr )
+       ,"categorifications"                   => ctstojs( fr )
+       ,"references"                          => fr.references
+       ,"software"                            => fr.software
+       ,"comments"                            => fr.comments
+       ,"non_categorifiable_reason"           => ncrtojs( fr ) 
+       ,"info"                                => infostring
+        )
+    )
+end
