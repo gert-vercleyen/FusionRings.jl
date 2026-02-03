@@ -1,5 +1,16 @@
 export FusionRing
 
+# TODO:
+# * add upper central series
+# * make non_cat_reason a list with reasons for each prop
+#   so
+#   [
+#     [ non_pivotal, reason_np ],
+#     [ non_unitary, reason_nu ],
+#     ...
+#   ]
+# * grading groups 
+
 struct FusionRing
     multiplication_table::Array{Int,3}
     names::Array{String,1}
