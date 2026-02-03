@@ -499,6 +499,7 @@ Rationale: internal computations (e.g. composing with other index-based
 operations) are simpler when the result is an index rather than a label.
 Use `conjugate_label` if you need the string form.
 """
+# TODO: outdated.
 function conjugate_element(fr::FusionRing, a)
     imap = indexmap(fr)
     ai = a isa Integer ? a : imap[String(a)]
