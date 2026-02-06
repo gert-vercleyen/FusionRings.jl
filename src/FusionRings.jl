@@ -1,12 +1,8 @@
 module FusionRings
 
-using Oscar
+using Oscar, Combinatorics, JSON, LinearAlgebra:eigen, Base.Threads, Accessors
 import Oscar: multiplication_table, is_commutative, rank, multiplicity
-using Combinatorics
-using JSON
-using LinearAlgebra:eigen
-using Base.Threads
-using Accessors
+import Base.names
 
 include("GeneralFunctions.jl")
 include("Creation.jl")
@@ -15,51 +11,38 @@ include("Operations.jl")
 include("ImportData.jl")
 include("FormattingAndPrinting.jl")
 
-export qqb_dict
-export fusion_ring_list
-export frl
-export fusion_ring_dict
-export frd
-export from_anyonwiki_code
-export fawc
+export qqb_dict, fusion_ring_list, frl, fusion_ring_dict, frd, from_anyonwiki_code, fawc
+
 function __init__()
+    # GLOBAL VARIABLES
     global QQb     = algebraic_closure(QQ)
     global QQab, ζ = abelian_closure(QQ)
 
-    
+    datadir = joinpath( @__DIR__, "data" )
+
+    # IMPORT DICTIONARY OF QQB ELEMENTS
     global qqb_dict = begin
-        datadir = joinpath( @__DIR__, "data", "Numbers", "QQBarFieldElems" )
         ids     = Oscar.load( joinpath( datadir, "qqb_ids.mrdi") )
         nums    = Oscar.load( joinpath( datadir, "qqb_vals.mrdi") )
 
         Dict( ids[i] => nums[i] for i in 1:length(ids) )
     end
 
-
-    local function load_frl()
-        path = joinpath( @__DIR__, "data", "FusionRingsJSON" )
-
-        prep_path( fn ) = joinpath( path, fn )
-
-        filenames = prep_path.( readdir(path) )
-
-        [ import_ring( fn ) for fn in filenames ]
-    end
-
-    # We want the mult-free rings to be first
-    function frlsortcrit( c )
-        (c.anyonwiki_code)[ [ 2, 1, 3, 4 ] ]
-    end
-
-    global fusion_ring_list = sort( load_frl(), by = frlsortcrit )
+    # IMPORT FUSION RINGS
+    global fusion_ring_list =
+        sort( # Stored list is unsorted so we still need to sort
+            import_rings( joinpath( datadir, "fusionrings.json" ) ),
+            by = ( x -> (x.anyonwiki_code)[ [ 2, 1, 3, 4 ] ] )
+        )
     global frl = fusion_ring_list
 
     global fusion_ring_dict = Dict( anyonwiki_code(r) => r for r in frl )
     global frd = fusion_ring_dict
 
     function from_anyonwiki_code( r, m, nnsd, i )
-        frd[ [ r, m, nnsd, i ] ]
+         frd[ [ r, m, nnsd, i ] ]
     end
+    
     function from_anyonwiki_code( v::Vector{Int64} )
         if length( v ) == 4
             return frd[ v ]
@@ -68,7 +51,6 @@ function __init__()
         end
     end
     global fawc = from_anyonwiki_code
-
 end
 
 end

@@ -130,6 +130,14 @@ function product_string(fr::FusionRing, a::Int, b::Int)
     string(fr.element_names[a], " × ", fr.element_names[b], " = ", rhs)
 end
 
+function export_tex_reps( filename::String,  v::Vector{QQBarFieldElem}; try_cyclo = false )
+    data = Dict( k => tex_reps(v) for (k,v) in qqb_dict )
+        
+    open( filename, "w" ) do f
+        JSON.json( f, data, pretty = true, inline_limit = 10 )
+    end
+end
+
 function tex_reps( x::QQBarFieldElem; try_cyclo = false )
     rat = rational_tex_rep(x)
     if rat != ""
@@ -152,11 +160,11 @@ function tex_reps( x::QQBarFieldElem; try_cyclo = false )
     end
     
     Dict(
-        "rational" => rational_tex_rep(x),
-        "radical" => radicals_tex_rep(x),
+        "rational"  => rational_tex_rep(x),
+        "radical"   => radicals_tex_rep(x),
         "power_sum" => ps,
-        "cyclo" => cyc,
-        "general" => general_tex_rep(x)
+        "cyclo"     => cyc,
+        "general"   => general_tex_rep(x)
     )
 end
 
@@ -193,14 +201,13 @@ function fix_poly_string(str::String)::String
 end
 
 function cyclo_tex_rep(x::QQBarFieldElem)
-    cx, = to_composite_field( x )
+    cx, emb = to_composite_field( x )
     if !is_abelian( parent( cx ) )
         return ""
     else
-        el = to_cyclotomic_field( cx ... )[1][1]
-        aQQb, = abelian_closure(QQ)
+        el = to_cyclotomic_field( cx, emb )[1]
 
-        (fix_cyclo ∘ fix_poly_string ∘ string ∘ aQQb)(el)
+        (fix_cyclo ∘ fix_poly_string ∘ string ∘ QQab)(el)
     end   
 end
 
@@ -271,7 +278,11 @@ function power_sum_tex_rep(x::QQBarFieldElem)
         n = degree(mp)
         a = x*gen
         i = findfirst( j -> QQb(ζ(n+1)^j) == a, 1:n )
-        return string(1//gen, "\\zeta_{", n+1, "}^{", i, "}" ) 
+        factorstring = gen == 1 ? "" : string(1//gen)
+        return string(
+            factorstring,
+            "\\zeta_{", n+1, "}^{", i, "}"
+        ) 
     else
         return ""
     end

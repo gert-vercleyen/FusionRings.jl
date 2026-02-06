@@ -15,12 +15,12 @@ end
 export to_composite_field
 
 function to_composite_field(
-    x::QQBarFieldElem,
+    x::QQBarFieldElem;
     simplify_field = false, 
     canonical_simplification = true
     )
     arr, emb = to_composite_field(
-        [x],
+        [x];
         simplify_field,
         canonical_simplification
     )
@@ -50,7 +50,7 @@ export to_cyclotomic_field
 
 
 function to_cyclotomic_field(
-    x::QQBarFieldElem,
+    x::QQBarFieldElem;
     simplify_field = false, 
     canonical_simplification = true
     )
