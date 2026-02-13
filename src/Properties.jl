@@ -248,7 +248,7 @@ Return  partition of  simple objects of `fr` into subsets that are
 stable under left and right action by  adjoint subring.
 
 """
-function adjoint_irreps(fr::FusionRing)
+function adjoint_irreps(fr::FusionRing)::Vector{Vector{Int}}
     S, adj = adjoint_fusion_ring(fr)        # S::Vector{Int}, adj::FusionRing
     Sset = collect(S)
     r = rank(fr)
@@ -277,7 +277,7 @@ function adjoint_irreps(fr::FusionRing)
     @inline function _closure_from(seed::Int)
         cur = [seed]
         while true
-            nxt = sort!(unique!(_act_pair(cur) ∪ cur))
+            nxt = sort!(_act_pair(cur) ∪ cur)
             length(nxt) == length(cur) && return cur
             cur = nxt
         end
