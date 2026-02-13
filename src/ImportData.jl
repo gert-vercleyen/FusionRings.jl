@@ -50,7 +50,8 @@ end
 export from_qqb_id
 
 from_qqb_id( s::String ) = qqb_dict[s]
-from_qqb_id( a::Array{String} ) = from_qqb_id.(a)
+from_qqb_id( a::Array{Any} ) = from_qqb_id.(a)
+from_qqb_id( a::Matrix{String} ) = from_qqb_id.(a)
 
 ############################################################
 # Importing fusion rings
@@ -106,6 +107,11 @@ function tpdfromjs(js::JSON.Object{String, Any})
 
     if length(tps) == 0
         []
+    elseif typeof(tps) === Vector{Any}
+        [
+            [ Int.( code ) for code in decomp ]
+            for decomp in tps
+        ]
     else
         tps = tps["value"]
         [
@@ -118,25 +124,24 @@ end
 # sub-fusion rings
 function sfrfromjs(js::JSON.Object{String, Any})
     srs = js["non_trivial_sub_fusion_rings"]
-    if length(srs) == 0
-        return []
-    end
 
-    srs = srs["value"]
+    # if length(srs) == 0
+    #     return []
+    # end
 
-    intData =
-        [
-            [ Int.( vec ) for vec in sr ]
-            for sr in srs
-        ]
+    # intData =
+    #     [
+    #         [ Int.( sr["injection"] ), Int.( sr["anyonwiki_code"] ) ]
+    #         for sr in srs
+    #     ]
 
-    [
-        Dict(
-            "injection"       => data[1],
-            "anyonwiki_code"  => data[2]
-        )
-        for data ∈ intData
-    ]
+    # [
+    #     Dict(
+    #         "injection"       => data[1],
+    #         "anyonwiki_code"  => data[2]
+    #     )
+    #     for data ∈ intData
+    # ]
 end
 
 function vec_to_cflt( v::Vector{Any} )::ComplexF64
@@ -144,17 +149,21 @@ function vec_to_cflt( v::Vector{Any} )::ComplexF64
 end
 
 # numeric characters
-function nchfromjs(js::JSON.Object{String, Any})::Matrix{ComplexF64}
+function nchfromjs(js::JSON.Object{String, Any})::Union{Missing,Matrix{ComplexF64}}
     ncvecs = js["numeric_characters"]
-    r = length(ncvecs)
-    [ vec_to_cflt( ncvecs[i][j] ) for i in 1:r, j in 1:r ]
+    if ncvecs === nothing
+        return missing
+    else
+        r = length(ncvecs)
+        [ vec_to_cflt( ncvecs[i][j] ) for i in 1:r, j in 1:r ]
+    end
 end
 
 # characters
 function chfromjs(js::JSON.Object{String, Any})
     try
         vecs = js["characters"]
-        getfromqqbdict([ vec[i] for vec in vecs, i in eachindex(vec) ])
+        string.(mapreduce( permutedims, vcat, vecs))
     catch e
         return missing
     end
@@ -190,43 +199,19 @@ end
 # TODO: only works for cats given by anyonwiki_code
 # categorifications
 function ctsfromjs(js::JSON.Object{String, Any})
-    # Known to be non categorifiable
-    if js["categorifiable"] === false
-        return Vector{Int64}[]
-    end
-
-    # Nothing known about categorifiability
-    if js["categorifiable"] === nothing 
-        return missing
-    end
-
-    # Has fusion categories
     cats = js["categorifications"]
-    k    = keys( cats )
 
-    # Legacy compatibility
-    if "categories" ∈ k
-        [ Int.(code) for code in cats["categories"] ]
-    else
+    if cats === nothing # Nothing known about categorifiability
+        return missing
+    elseif length(cats) === 0 # Known to have no cats
+        return Vector{Int64}[]
+    else 
         [ Int.(code) for code in cats ]
     end
 end
 
 function ctpfromjs(js::JSON.Object{String, Any})
-  if cfromjs(js) === missing
-    return missing
-  end
-
-  if cfromjs(js) 
     props = js["has_categories_with_props"]
-
-    Dict( 
-      props[i][1] => props[i][2] 
-      for i in 1:length(props) 
-    )
-  else
-    Dict( "Fusion" => false )
-  end
 end
 
 # TODO: it should be possible to add type to output but I get the following error when importing FR^{2,10,0}_{1}:
@@ -303,11 +288,11 @@ function psrfromjs(js::JSON.Object{String, Any})
                 dicts,
                 Dict(
                     "S_matrix"      =>
-                        getfromqqbdict(
+                        from_qqb_id(
                             [ sm[i][j] for i in 1:r, j in 1:r ]
                         ),
                     "twist_factors" =>
-                        getfromqqbdict(
+                        from_qqb_id(
                             [
                                 [  vec[j] for j in 1:r ]
                                 for vec in tf
@@ -324,7 +309,7 @@ end
 # import fpdim. Might fail
 function fpdfromjs(js::JSON.Object{String, Any})
     try
-        getfromqqbdict(js["frobenius_perron_dimension"])
+        from_qqb_id(js["frobenius_perron_dimension"])
     catch e
         missing
     end
@@ -332,9 +317,26 @@ end
 
 function fpdsfromjs(js::JSON.Object{String, Any})
     try
-        getfromqqbdict(js["frobenius_perron_dimensions"])
+        from_qqb_id(js["frobenius_perron_dimensions"])
     catch e
         missing
+    end
+end
+
+function ncrfromjs(js::JSON.Object{String, Any})
+    k = keys( js )
+    if "non_cat_reasons" ∈ k
+        return js["non_cat_reasons"]
+    else
+        return Dict(
+            "Fusion"    => "missing",
+            "Pivotal"   => "missing",
+            "Spherical" => "missing",
+            "Unitary"   => "missing",
+            "Braided"   => "missing",
+            "Ribbon"    => "missing",
+            "Modular"   => "missing"
+        )
     end
 end
 
@@ -360,12 +362,52 @@ function import_ring( filename::String )
         numeric_frobenius_perron_dimension  = nfpdfromjs( js ),
         numeric_frobenius_perron_dimensions = nfpdsfromjs( js ),
         has_categories_with_props           = ctpfromjs( js ),
-        categorifiable                      = cfromjs( js ),
+        #categorifiable                      = cfromjs( js ),
         categorifications                   = ctsfromjs( js ),
         references                          = js["references"],
         software                            = js["software"],
-        comments                            = js["comments"]
+        comments                            = js["comments"],
+        non_cat_reasons                     = ncrfromjs( js )
   )
+end
+
+export import_rings
+
+function import_rings( filename::String )
+    jsdict = JSON.parsefile( filename );
+
+    frlist = FusionRing[]
+    
+    for ind in eachindex( jsdict["data"] )
+        js = jsdict["data"][ind]
+        fr = 
+        fusion_ring(
+            mtfromjs( js ),
+            names                               = nfromjs( js ),
+            texnames                            = tnfromjs( js ),
+            barcode                             = bcfromjs( js ),
+            anyonwiki_code                      = fcfromjs( js ),
+            characters                          = chfromjs( js ),
+            sub_fusion_rings                    = sfrfromjs( js ),
+            projective_SL2Z_reps                = psrfromjs( js ),
+            frobenius_perron_dimension          = fpdfromjs( js ),
+            frobenius_perron_dimensions         = fpdsfromjs( js ),
+            tensor_product_decompositions       = tpdfromjs( js ),
+            numeric_characters                  = nchfromjs( js ),
+            numeric_projective_SL2Z_reps        = npsrfromjs( js ),
+            numeric_frobenius_perron_dimension  = nfpdfromjs( js ),
+            numeric_frobenius_perron_dimensions = nfpdsfromjs( js ),
+            has_categories_with_props           = ctpfromjs( js ),
+            categorifications                   = ctsfromjs( js ),
+            references                          = js["references"],
+            software                            = js["software"],
+            comments                            = js["comments"],
+            non_cat_reasons                     = ncrfromjs( js )
+        )
+        push!( frlist, fr )
+    end
+
+    frlist
 end
 
 
@@ -385,14 +427,14 @@ end
 function mttojs( fr::FusionRing )::Vector{Vector{Vector{Int64}}}
     mt = multiplication_table( fr )
     r  = rank( fr )
-    [ [ [ mt[i,j,k] for i in 1:r ] for j in 1:r ] for k in 1:r ]
+    [ [ [ mt[i,j,k] for k in 1:r ] for j in 1:r ] for i in 1:r ]
 end
 
 function chtojs( fr::FusionRing )
     ch = fr.characters
     if ch !== missing 
         r  = rank( fr )
-        return [ [ ch[i,j] for i in 1:r ] for j in 1:r ]
+        return [ [ ch[i,j] for j in 1:r ] for i in 1:r ]
     else
         return nothing
     end 
@@ -446,7 +488,7 @@ function nchtojs( fr::FusionRing )::Union{Vector{Vector{Vector{Float64}}},Nothin
     else
         r = rank( fr )
         splitchars = reim.( numeric_characters( fr ) )
-        return [ [ splitchars[i,j] for i in 1:r ] for j in 1:r ]
+        return [ [ splitchars[i,j] for j in 1:r ] for i in 1:r ]
     end
 end
 
@@ -473,13 +515,16 @@ end
 
 
 function cpropstojs( fr::FusionRing )
-    cp = categories_with_properties( fr )
-    if cp !== missing 
-        return [ [ k, v ] for (k,v) in cp ]
-    else
-        return nothing
+    props = fr.has_categories_with_props
+    function missing_to_nothing( v )
+        if v[2] === missing
+            [ v[1], nothing, v[3]  ]
+        else
+            v
+        end
     end
-
+    
+    missing_to_nothing.(props)
 end
 
 function ctojs( fr::FusionRing )
@@ -499,23 +544,18 @@ function nfpdstojs( fr::FusionRing )
 end
 
 function ncrtojs( fr::FusionRing )
-    missing_to_nothing( fr.non_cat_reason )
+    missing_to_nothing( fr.non_cat_reasons )
 end
 
 function write_json( filename::String, data::Dict )
     open( filename, "w" ) do f
-        JSON.print( f, data )
+        JSON.json( f, data, pretty = true, inline_limit = 10 )
     end 
 end
 
-export export_ring
-
-function export_ring( filename::String,  fr::FusionRing )
-
+function ring_to_dict( fr )
     infostring = "Fusion ring. mult_tab: structure constants. barcode & formal_code: unique identifiers see (DOI: 10.1063/5.0148848). non_trivial_sub_fusion_rings: tuples where the first element = elements of ring that form subring isomorphic to subring identified by second element of the tuple. software: doi of original software used to represent fusion ring. references: doi of paper from which data was obtained. categorifiable: false=not categorifiable, null= unknown. categorifications: if categorifiable then anyonwiki codes of pivotal (braided) fusion cats that categorify ring. numeric_projective_SL2Z_reps: each rep consists of a generalized S-matrix and a vector of vectors representing the ln(diag(T))/(2 pi i) of a generalized T-matrix. Algebraic numbers are encoded as a0_..._an__m where ai are polynomial coefficients and m is root number, ordered via Mathematica's convention."
-    
-    write_json( filename, 
-        Dict(
+    Dict(
         "mult_tab"                            => mttojs( fr )
        ,"names"                               => names( fr )
        ,"texnames"                            => tex_names( fr )
@@ -532,13 +572,70 @@ function export_ring( filename::String,  fr::FusionRing )
        ,"numeric_frobenius_perron_dimension"  => nfpdtojs( fr )
        ,"numeric_frobenius_perron_dimensions" => nfpdstojs( fr )
        ,"has_categories_with_props"           => cpropstojs( fr )
-       ,"categorifiable"                      => ctojs( fr )
        ,"categorifications"                   => ctstojs( fr )
        ,"references"                          => fr.references
        ,"software"                            => fr.software
        ,"comments"                            => fr.comments
-       ,"non_categorifiable_reason"           => ncrtojs( fr ) 
        ,"info"                                => infostring
-        )
     )
+end
+
+export rings_to_dict
+
+function rings_to_dict( frs::Vector{FusionRing} )
+
+    infostring = "Fusion ring. mult_tab: structure constants. barcode & formal_code: unique identifiers see (DOI: 10.1063/5.0148848). non_trivial_sub_fusion_rings: tuples (els,sr) with els = elements of ring that form subring isomorphic to ring sr. software: doi of original software used to represent fusion ring. references: doi of paper from which data was obtained. categorifications: if categorifiable then anyonwiki codes of pivotal (braided) fusion cats. numeric_projective_SL2Z_reps: each rep consists of a generalized S-matrix and a vector of vectors representing the ln(diag(T))/(2 pi i) of a generalized T-matrix. Algebraic numbers are encoded as a0_..._an__m where ai are polynomial coefficients and m is root number, ordered via Mathematica's convention. has_categories_with_props: triples [ prop, bool, reason ] where prop is the property, bool is true when its known at least one cat with prop exists, false when its known no cat with prop exists and null when no information is known. reason is a tuple [ method, str ] where method could be computer or theory and str gives more info."
+
+    # We don't want to copy the infostring for each ring
+    function ringtodict( fr )
+        Dict(
+         "mult_tab"                            => mttojs( fr )
+        ,"names"                               => names( fr )
+        ,"texnames"                            => tex_names( fr )
+        ,"barcode"                             => string( barcode( fr ) )
+        ,"anyonwiki_code"                      => anyonwiki_code( fr )
+        ,"characters"                          => chtojs( fr )
+        ,"non_trivial_sub_fusion_rings"        => sfrtojs(fr)
+        ,"projective_SL2Z_reps"                => psrtojs( fr )
+        ,"frobenius_perron_dimension"          => fpdtojs( fr )
+        ,"frobenius_perron_dimensions"         => fpdstojs( fr )
+        ,"tensor_product_decompositions"       => tpdtojs( fr )
+        ,"numeric_characters"                  => nchtojs( fr )
+        ,"numeric_projective_SL2Z_reps"        => npsrtojs( fr )
+        ,"numeric_frobenius_perron_dimension"  => nfpdtojs( fr )
+        ,"numeric_frobenius_perron_dimensions" => nfpdstojs( fr )
+        ,"has_categories_with_props"           => cpropstojs( fr )
+        ,"categorifications"                   => ctstojs( fr )
+        ,"references"                          => fr.references
+        ,"software"                            => fr.software
+        ,"comments"                            => fr.comments
+        )
+    end
+    
+    Dict(
+        "data" => Dict( fusion_ring_string(fr) => ringtodict(fr) for fr in frs ),
+        "info" => infostring
+    )
+end
+
+function fusion_ring_string(fr::FusionRing)
+    c  = string.( anyonwiki_code( fr ) )
+    us = fill( "_", 3 )
+    stringriffle( c, us )
+end
+
+function fusion_ring_file_name(fr::FusionRing)
+    fusion_ring_string(fr) * ".json"
+end
+
+export export_ring
+
+function export_ring( filename::String,  fr::FusionRing )
+    write_json( filename, ring_to_dict( fr ) )
+end
+
+export export_rings
+
+function export_rings( filename::String, frs::Vector{FusionRing})
+    write_json( filename, rings_to_dict( frs ) ) 
 end

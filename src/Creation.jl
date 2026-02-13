@@ -1,12 +1,23 @@
 export FusionRing
 
+# TODO:
+# * add upper central series
+# * make non_cat_reason a list with reasons for each prop
+#   so
+#   [
+#     [ non_pivotal, reason_np ],
+#     [ non_unitary, reason_nu ],
+#     ...
+#   ]
+# * grading groups 
+
 struct FusionRing
     multiplication_table::Array{Int,3}
     names::Array{String,1}
     texnames::Array{String,1}
     labels::Array{String,1}
     barcode
-    anyonwiki_code::Array{Int,1}
+    anyonwiki_code::Union{Array{Int,1},Missing}
     characters
     sub_fusion_rings
     projective_SL2Z_reps
@@ -23,7 +34,7 @@ struct FusionRing
     references
     software
     comments
-    non_cat_reason
+    non_cat_reasons
 end
 
 export fusion_ring
@@ -85,7 +96,7 @@ function fusion_ring(
     references                          = missing,
     software                            = missing,
     comments                            = missing,
-    non_cat_reason                      = missing,
+    non_cat_reasons                     = missing,
     skip_check                          = false,
     )
 
@@ -124,7 +135,7 @@ function fusion_ring(
         ,references
         ,software
         ,comments
-        ,non_cat_reason
+        ,non_cat_reasons
     )
 end
 

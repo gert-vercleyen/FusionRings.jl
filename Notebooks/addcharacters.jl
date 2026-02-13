@@ -1,13 +1,6 @@
 using Pkg; Pkg.activate("/home/gert/Projects/FusionRings.jl")
 using Revise, Oscar, Accessors, JSON, FusionRings 
 
-using Oscar
-base_dir = "/home/gert/Projects/FusionRings.jl/src/data/Numbers/QQBarFieldElems/"
-qqb_ids  = Oscar.load( joinpath( base_dir, "qqb_ids.mrdi" ) )
-qqb_vals = Oscar.load( joinpath( base_dir, "qqb_vals.mrdi" ) )
-dict = Dict( qqb_ids[i] => qqb_vals[i] for i in 1:length(qqb_ids) )
-
-
 to_qqb_arr( mat ) = [ mat[i] for i in eachindex(mat) ] 
 
 function adddata( fr )
