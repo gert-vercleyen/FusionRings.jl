@@ -266,9 +266,78 @@ function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
   
 end
 
-function universal_grading(r::FusionRing)
-  
+# =========================
+# Universal grading (Anyonica-style)
+# =========================
+
+export universal_grading
+
+"""
+    universal_grading(fr::FusionRing) -> (grading, groupRing)
+
+Compute universal grading of `fr` 
+
+- `grading` is a `Vector{Int}` of length `rank(fr)` where `grading[i] = a`
+  means the simple object `i` lies in block `a` (where blocks are `adjoint_irreps(fr)`).
+- `groupRing` is a `FusionRing` on these blocks whose multiplication table `M[a,b,c] ∈ {0,1}`
+  encodes:  block `c` contains all fusion outcomes of `i ⊗ j` with `i ∈ block a`, `j ∈ block b`.
+
+This matches the Anyonica definition:
+`cond(l1,l2,l3) := l3 ⊇ ⋃_{i∈l1, j∈l2} FusionOutcomes[i,j]`.
+"""
+function universal_grading(fr::FusionRing)
+    irreps = adjoint_irreps(fr)                 # Vector{Vector{Int}}
+    n = length(irreps)
+    r = rank(fr)
+
+    # grading[i] = block id containing i
+    grading = zeros(Int, r)
+    @inbounds for a in 1:n
+        for i in irreps[a]
+            grading[i] = a
+        end
+    end
+
+    # Helper: outcomes of i ⊗ j as indices c with N[i,j,c] > 0.
+    # ( keep it local to avoid name collisions with existing fusion_outcomes.)
+    N = multiplication_table(fr)
+    @inline function _outcomes(i::Int, j::Int)::Vector{Int}
+        @views nz = findall(>(0), N[i, j, :])
+        [ci.I[1] for ci in nz]
+    end
+
+    # cond(Ia, Ib, Ic): Ic contains all outcomes of i⊗j for i∈Ia, j∈Ib
+    @inline function _cond(Ia::Vector{Int}, Ib::Vector{Int}, Icset::Set{Int})::Bool
+        @inbounds for i in Ia, j in Ib
+            for c in _outcomes(i, j)
+                c in Icset || return false
+            end
+        end
+        return true
+    end
+
+    # Precompute sets for fast subset tests
+    irsets = [Set(block) for block in irreps]
+
+    # Build multiplication table on the blocks: M[a,b,c] = 1 if cond holds, else 0
+    M = zeros(Int, n, n, n)
+    @inbounds for a in 1:n, b in 1:n, c in 1:n
+        M[a, b, c] = _cond(irreps[a], irreps[b], irsets[c]) ? 1 : 0
+    end
+
+    # Construct  grading group ring.
+    # Keep labels simple: "g1","g2",...
+    glabels = [ "g$(i)" for i in 1:n ]
+
+    groupRing = fusion_ring(
+        M;
+        names  = ["UniversalGrading($(first(names(fr), default="FusionRing")) )"],
+        labels = glabels
+    )
+
+    return grading, groupRing
 end
+
 
 function all_gradings(r::FusionRing)
 
