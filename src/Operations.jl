@@ -123,6 +123,9 @@ function tensor_product(r1::FusionRing, r2::FusionRing)::FusionRing
     )
 end
 
+
+
+
 "Return vector of simple indices with positive multiplicity in `a ⊗ b`."
 function fusion_outcomes(fr::FusionRing, a::Int, b::Int)::Vector{Int}
     [c for (c,m) in fusion_product(fr,a,b) if m>0]
