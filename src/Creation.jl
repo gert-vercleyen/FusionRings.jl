@@ -1051,7 +1051,9 @@ function son2_fusion_ring(m::Int)::FusionRing
     return replace_by_known(R)
 end
 
-export metaplectic_fusion_ring( n::Int )::FusionRing = son2_fusion_ring(n)
+export metaplectic_fusion_ring
+
+metaplectic_fusion_ring( n::Int )::FusionRing = son2_fusion_ring(n)
 
 
 groupname(grp) = try string(grp) catch; "Unknown Group" end
