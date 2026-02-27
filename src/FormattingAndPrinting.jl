@@ -131,7 +131,7 @@ function product_string(fr::FusionRing, a::Int, b::Int)
 end
 
 function export_tex_reps( filename::String,  v::Vector{QQBarFieldElem}; try_cyclo = false )
-    data = Dict( k => tex_reps(v) for (k,v) in qqb_dict )
+    data = Dict( qqb_id(x) => tex_reps(x) for x in v )
         
     open( filename, "w" ) do f
         JSON.json( f, data, pretty = true, inline_limit = 10 )
