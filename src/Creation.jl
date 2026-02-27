@@ -269,30 +269,23 @@ hi_fusion_ring(grp)       = throw(ErrorException("hi_fusion_ring (Haagerup–Izu
 
 
 
-###############################
+
 # Haagerup–Izumi (HI) and Tambara–Yamagami (TY) fusion rings
-# Ported from the Anyonica (Mathematica) definitions you pasted.
-#
-# Conventions:
-# - Input `tab` is an n×n group multiplication table on {1,…,n} with identity = 1.
+# - Input `tab` is  n×n group multiplication table on {1,…,n} with identity = 1.
 # - Output `mt` is a rank×rank×rank multiplication tensor with structure constants
 #     mt[i,j,k] = multiplicity of simple k in i ⊗ j.
-#
-# You must already have:
+# must already have:
 #   - struct FusionRing with fields `multiplication_table`, `names`, `labels` (etc.)
 #   - `fusion_ring(mt; names=..., labels=...)` constructor
 #
 # This file provides:
 #   FusionRingHI(tab; names=...)
 #   FusionRingTY(tab; names=...)
-#
-###############################
+=
 
 export FusionRingHI, FusionRingTY
 
-# ---------------------------
-# Helpers: group-table checks
-# ---------------------------
+
 
 """
     _is_group_table(tab) -> Bool
@@ -371,9 +364,7 @@ function _inverse_vector(tab::AbstractMatrix{<:Integer})::Vector{Int}
     return inv
 end
 
-# ---------------------------
-# Convert (list of fusion mats) -> mt
-# ---------------------------
+
 
 """
     _mats_to_mt(mats) -> mt
@@ -392,9 +383,6 @@ function _mats_to_mt(mats::Vector{<:AbstractMatrix{<:Integer}})::Array{Int,3}
     return mt
 end
 
-# ---------------------------
-# Tambara–Yamagami
-# ---------------------------
 
 """
     FusionRingTY(tab; names=String[]) -> FusionRing
