@@ -588,6 +588,10 @@ end
 
 
 
+# TODO 
+# 1. Could use unicode to make everything more readable
+# 2. Could use dictionaries rather than elseif statements 
+# 3. Should put code in Creation.jl
 
 # Anyonica rulesodd[m_]  (metaplectic / SO(m)_2, m odd)
 # 
@@ -747,7 +751,7 @@ end
 
 #  rulesdiv2[p_] and rulesdiv4[p_]  (SO(m)_2 even cases)
 #
-# Used by FusionRingSON2:
+# Used by son2_fusion_ring:
 #   if m % 4 == 0  => rulesdiv4(m/2)
 #   elseif m % 2 == 0 => rulesdiv2(m/2)
 #
@@ -1305,7 +1309,7 @@ end
 #   _son2_rules_div2(p)     # for m ≡ 2 (mod 4), with p = m÷2
 #   _son2_rules_div4(p)     # for m ≡ 0 (mod 4), with p = m÷2
 
-export FusionRingSON2
+export son2_fusion_ring
 
 
 # odd m: rank = (m+7)/2, elements are [1, Z, X_e1, X_e2, Y_1, ..., Y_r], r=(m-1)/2
@@ -1331,18 +1335,17 @@ end
 
 
 """
-    FusionRingSON2(m::Int) -> FusionRing
+    son2_fusion_ring(m::Int) -> FusionRing
 
-Return fusion ring SO(m)_2 (metaplectic) .
-
-- odd `m`: uses `_son2_rules_odd(m)`
-- even `m ≡ 0 (mod 4)`: uses `_son2_rules_div4(m÷2)`
-- even `m ≡ 2 (mod 4)`: uses `_son2_rules_div2(m÷2)`
-
-
+Return fusion ring SO(N)_2 (metaplectic) .
 """
-function FusionRingSON2(m::Int)::FusionRing
-    m ≥ 4 || throw(ArgumentError("FusionRingSON2(m): requires integer m ≥ 4, got m=$m"))
+
+#- odd `N`: uses `_son2_rules_odd(m)`
+#- even `N ≡ 0 (mod 4)`: uses `_son2_rules_div4(N÷2)`
+#- even `N ≡ 2 (mod 4)`: uses `_son2_rules_div2(N÷2)`
+
+function son2_fusion_ring(m::Int)::FusionRing
+    m ≥ 4 || throw(ArgumentError("son2_fusion_ring(m): requires integer m ≥ 4, got m=$m"))
 
     mt::Array{Int,3}
     labels::Vector{String}
@@ -1361,7 +1364,7 @@ function FusionRingSON2(m::Int)::FusionRing
     end
 
     #  label count must match rank
-    size(mt, 1) == length(labels) || error("FusionRingSON2: label length mismatch with mt rank")
+    size(mt, 1) == length(labels) || error("son2_fusion_ring: label length mismatch with mt rank")
 
     R = fusion_ring(
         mt;
