@@ -150,6 +150,8 @@ end
 
 export sub_fusion_rings
 
+#TODO needs to be implemented for when data is not available
+
 function sub_fusion_rings(r::FusionRing)
     dictvec = r.sub_fusion_rings
     if dictvec !== missing
@@ -182,16 +184,19 @@ function sub_fusion_rings(r::FusionRing)
 #end
 end
 
+# TODO: only implement if necessary for function sub_fusion_rings
 function sub_ring_tables(mat::Array{Int,2})
 
 end
 
 # injection_form( subring, ring ) returns the vector of elements of
 # ring that form subring in the correct order  
+# TODO: implement 
 function injection_form( subring::FusionRing, ring::FusionRing )
 
 end
 
+# TODO: implement
 function is_sub_fusion_ring(subring::FusionRing,ring::FusionRing)::Bool
   
 end
