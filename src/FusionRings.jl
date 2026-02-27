@@ -1,6 +1,7 @@
 module FusionRings
 
-using Oscar, Combinatorics, JSON, LinearAlgebra:eigen, Base.Threads, Accessors
+using Oscar, Combinatorics, JSON, Base.Threads, Accessors
+using LinearAlgebra:eigen 
 import Oscar: multiplication_table, is_commutative, rank, multiplicity
 import Base.names
 
