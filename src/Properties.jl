@@ -36,8 +36,7 @@ end
 export conjugation_matrix
 
 function conjugation_matrix(fr::FusionRing)
-    N = fusion_tensor(fr)
-    @views N[:, :, 1]
+    @views multiplication_table(fr)[:, :, 1]
 end
 
 export multiplicity
@@ -230,169 +229,21 @@ function adjoint_fusion_ring(r::FusionRing)::FusionRing
   
 end
 
-export upper_central_series
-
-function upper_central_series(fr::FusionRing)
-    chain = Tuple{Vector{Int},FusionRing}[]
-    push!(chain, (collect(1:rank(fr)), fr))
-
-    while true
-        S, adj = adjoint_fusion_ring(last(chain)[2])
-        # Stop if stable (same subring as previous) or reached {1}
-        if adj === last(chain)[2]
-            break
-        end
-        push!(chain, (S, adj))
-        if length(S) == 1
-            break
-        end
-    end
-
-    # Anyonica -  DeleteDuplicatesBy(..., Last) Since  breaks on stability,
-    # trivial repeats shouldn't occur;  chain is already deduplicated by Last.
-    chain
+function upper_central_series(r::FusionRing)::Array{FusionRing,1}
+  
 end
 
-
-export is_nilpotent_fusion_ring
-
-function is_nilpotent_fusion_ring(fr::FusionRing)::Bool
-    ucs = upper_central_series(fr)
-    S_last = first(last(ucs))          # the element set in the last pair
-    length(S_last) == 1 && S_last[1] == 1
+function is_nilpotent(r::FusionRing)::Bool
+  
 end
 
-
-export adjoint_irreps
-
-"""
-    adjoint_irreps(fr::FusionRing) -> Vector{Vector{Int}}
-
-Return  partition of  simple objects of `fr` into subsets that are
-stable under left and right action by  adjoint subring.
-
-"""
-function adjoint_irreps(fr::FusionRing)::Vector{Vector{Int}}
-    S, adj = adjoint_fusion_ring(fr)        # S::Vector{Int}, adj::FusionRing
-    Sset = collect(S)
-    r = rank(fr)
-
-    # One step of left/right action by S on a set X:
-    @inline function _act_pair(X::Vector{Int})
-        seen = falses(r)
-        # left: a cross x
-        @inbounds for a in Sset, x in X
-            for (c, m) in tensor_product(fr, a, x)
-                m == 0 && continue
-                seen[c] = true
-            end
-        end
-        # right: x cross a
-        @inbounds for x in X, a in Sset
-            for (c, m) in tensor_product(fr, x, a)
-                m == 0 && continue
-                seen[c] = true
-            end
-        end
-        return findall(seen)
-    end
-
-    # Fixed point closure under combined action:
-    @inline function _closure_from(seed::Int)
-        cur = [seed]
-        while true
-            nxt = sort!(_act_pair(cur) ∪ cur)
-            length(nxt) == length(cur) && return cur
-            cur = nxt
-        end
-    end
-
-    # Build blocks and deduplicate
-    blocks = Vector{Vector{Int}}()
-    covered = falses(r)
-    @inbounds for e in 1:r
-        covered[e] && continue
-        blk = _closure_from(e) |> sort
-        push!(blocks, blk)
-        covered[blk] .= true
-    end
-    # Normalized: sort blocks lexicographically
-    sort!(blocks, by = x -> (length(x), x))
-    return blocks
+function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
+  
 end
 
-# =========================
-# Universal grading (Anyonica-style)
-# =========================
-
-export universal_grading
-
-"""
-    universal_grading(fr::FusionRing) -> (grading, groupRing)
-
-Compute universal grading of `fr` 
-
-- `grading` is a `Vector{Int}` of length `rank(fr)` where `grading[i] = a`
-  means the simple object `i` lies in block `a` (where blocks are `adjoint_irreps(fr)`).
-- `groupRing` is a `FusionRing` on these blocks whose multiplication table `M[a,b,c] ∈ {0,1}`
-  encodes:  block `c` contains all fusion outcomes of `i ⊗ j` with `i ∈ block a`, `j ∈ block b`.
-
-This matches the Anyonica definition:
-`cond(l1,l2,l3) := l3 ⊇ ⋃_{i∈l1, j∈l2} FusionOutcomes[i,j]`.
-"""
-function universal_grading(fr::FusionRing)
-    irreps = adjoint_irreps(fr)                 # Vector{Vector{Int}}
-    n = length(irreps)
-    r = rank(fr)
-
-    # grading[i] = block id containing i
-    grading = zeros(Int, r)
-    @inbounds for a in 1:n
-        for i in irreps[a]
-            grading[i] = a
-        end
-    end
-
-    # Helper: outcomes of i ⊗ j as indices c with N[i,j,c] > 0.
-    # ( keep it local to avoid name collisions with existing fusion_outcomes.)
-    N = multiplication_table(fr)
-    @inline function _outcomes(i::Int, j::Int)::Vector{Int}
-        @views nz = findall(>(0), N[i, j, :])
-        [ci.I[1] for ci in nz]
-    end
-
-    # cond(Ia, Ib, Ic): Ic contains all outcomes of i⊗j for i∈Ia, j∈Ib
-    @inline function _cond(Ia::Vector{Int}, Ib::Vector{Int}, Icset::Set{Int})::Bool
-        @inbounds for i in Ia, j in Ib
-            for c in _outcomes(i, j)
-                c in Icset || return false
-            end
-        end
-        return true
-    end
-
-    # Precompute sets for fast subset tests
-    irsets = [Set(block) for block in irreps]
-
-    # Build multiplication table on the blocks: M[a,b,c] = 1 if cond holds, else 0
-    M = zeros(Int, n, n, n)
-    @inbounds for a in 1:n, b in 1:n, c in 1:n
-        M[a, b, c] = _cond(irreps[a], irreps[b], irsets[c]) ? 1 : 0
-    end
-
-    # Construct  grading group ring.
-    # Keep labels simple: "g1","g2",...
-    glabels = [ "g$(i)" for i in 1:n ]
-
-    groupRing = fusion_ring(
-        M;
-        names  = ["UniversalGrading($(first(names(fr), default="FusionRing")) )"],
-        labels = glabels
-    )
-
-    return grading, groupRing
+function universal_grading(r::FusionRing)
+  
 end
-
 
 function all_gradings(r::FusionRing)
 
@@ -647,7 +498,6 @@ Rationale: internal computations (e.g. composing with other index-based
 operations) are simpler when the result is an index rather than a label.
 Use `conjugate_label` if you need the string form.
 """
-# TODO: outdated.
 function conjugate_element(fr::FusionRing, a)
     imap = indexmap(fr)
     ai = a isa Integer ? a : imap[String(a)]
@@ -703,7 +553,7 @@ function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
             # First multiply a ⊗ b
             for (u, mu) in tensor_product(fr, a, b)
                 mu == 0 && continue
-                # Then multiply by a* ⊗ b* ; we do it as (u ⊗ a*) ⊗ b*
+                # Then multiply by a* ⊗ b* - do it as (u ⊗ a*) ⊗ b*
                 for (v, mv) in tensor_product(fr, u, aᵗ)
                     mv == 0 && continue
                     for (w, mw) in tensor_product(fr, v, bᵗ)
@@ -735,7 +585,6 @@ export is_categorifiable
 function is_categorifiable( fr::FusionRing )
     return fr.categorifiable
 end
-
 
 
 
