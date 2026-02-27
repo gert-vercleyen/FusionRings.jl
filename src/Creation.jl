@@ -258,12 +258,10 @@ function ty_fusion_ring(G::AbstractVector)::FusionRing
 end
 
 # TODO: implement 
-son2_fusion_ring(n::Int) = throw(ErrorException("son2_fusion_ring requires SO(n)_2 fusion rules (TODO)"))
-# TODO: implement 
 group_rep_fusion_ring(grp) = throw(ErrorException("group_rep_fusion_ring needs character tables (TODO)"))
 # TODO: implement 
 hi_fusion_ring(grp)       = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
-\
+
 
 
 
@@ -1053,7 +1051,7 @@ function son2_fusion_ring(m::Int)::FusionRing
     return replace_by_known(R)
 end
 
-
+export metaplectic_fusion_ring( n::Int )::FusionRing = son2_fusion_ring(n)
 
 
 groupname(grp) = try string(grp) catch; "Unknown Group" end
