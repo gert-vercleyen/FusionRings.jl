@@ -248,8 +248,27 @@ function tensor_product_decompositions( r::FusionRing )
     error("Not implemented yet.")
 end
 
-function adjoint_fusion_ring(r::FusionRing)::FusionRing
-  
+
+#Added: from updates/commutator
+export adjoint_fusion_ring
+function adjoint_fusion_ring(ring::FusionRing)::Tuple{Vector{Int},FusionRing}
+    d(i) = conjugate_element(ring, i)
+
+    el_seen = falses(rank(ring))
+    for (i, j, c) in nzsc(ring)
+        if j == d(i)
+            el_seen[c] = true
+        end
+    end
+    el = findall(el_seen)
+
+    generatedEl = _fusion_closure(ring, el)
+
+    if length(generatedEl) == rank(ring)
+        return (generatedEl, ring)
+    else
+        return (generatedEl, _restrict_subring(ring, generatedEl; check_closed = true))
+    end
 end
 
 function upper_central_series(r::FusionRing)::Array{FusionRing,1}
