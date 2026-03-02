@@ -133,6 +133,24 @@ function conjugate_element(r::FusionRing)
    return i -> ( conjugation_matrix(r) * collect( 1:rank(r) ) )[i]
 end
 
+"""
+    conjugate_element(fr, a) -> Int
+
+Return the integer index of the dual (conjugate) simple object of `a`.
+Accepts an integer index, a `String`, or a `Symbol`.
+"""
+function conjugate_element(fr::FusionRing, a)
+    imap = indexmap(fr)
+    ai = a isa Integer ? a : imap[String(a)]
+    C = conjugation_matrix(fr)
+    findfirst(==(1), C[ai, :])::Int
+end
+
+export anyonwiki_code
+function anyonwiki_code(r::FusionRing)::Array{Int,1}
+  return r.anyonwiki_code
+end
+
 export anyonwiki_code
 
 function anyonwiki_code(r::FusionRing)::Array{Int,1}
