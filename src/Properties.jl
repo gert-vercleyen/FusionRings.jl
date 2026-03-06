@@ -636,4 +636,30 @@ function _fusion_closure(fr::FusionRing, S0::Vector{Int})::Vector{Int}
 end
 
 
+#Added: from pushed files branch
+# restrict ring to subindices S (Anyonica's MT[ring][[el,el,el]])
+function _restrict_subring(fr::FusionRing, S::Vector{Int}; check_closed::Bool = true)::FusionRing
+    sort!(S)
+    N = multiplication_table(fr)
+    @views Nsub = N[S, S, S]
+
+    if check_closed
+        # sanity: S must be fusion-closed
+        rmap = zeros(Int, rank(fr))
+        @inbounds for (k, v) in enumerate(S)
+            rmap[v] = k
+        end
+        @inbounds for a in S, b in S
+            for c in findall(>(0), N[a, b, :])
+                rmap[c] != 0 || error("subset not fusion-closed")
+            end
+        end
+    end
+
+    # TODO: might want to conserve as much information as possible, but 
+    # it's better to wait until all fields of the FusionRing struct are finalized
+    fusion_ring( Nsub )
+end
+
+
 
