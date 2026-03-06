@@ -183,24 +183,7 @@ function sub_fusion_rings(r::FusionRing)
     else
         error("Method sub_fusion_rings not full implemented yet")
     end
-# TODO: still uses labels and doesn't return injections
-#function sub_fusion_rings(fr::FusionRing)
-#    L = labels(fr); r = length(L)
-#    sets = Vector{Vector{String}}()
-#    for mask in 1:(1<<(r-1))-1
-#        subset = [L[1]]
-#        for i in 2:r
-#            if ((mask >> (i-2)) & 1) == 1
-#                push!(subset, L[i])
-#            end
-#        end
-#        if is_sub_fusion_ring(fr, subset) && length(subset)<r
-#            push!(sets, subset)
-#        end
-#    end
-#    sets
-#end
-end
+
 
 # TODO: only implement if necessary for function sub_fusion_rings
 function sub_ring_tables(mat::Array{Int,2})
@@ -628,6 +611,29 @@ function is_categorifiable( fr::FusionRing )
     return fr.categorifiable
 end
 
+#Added: from pushed files branch
+# closure of a subset of elements of a fusion ring under fusion
+function _fusion_closure(fr::FusionRing, S0::Vector{Int})::Vector{Int}
+    r = rank(fr)
+    seen = falses(r)
+    @inbounds for s in S0
+        seen[s] = true
+    end
+    changed = true
+    while changed
+        changed = false
+        current = findall(seen)
+        @inbounds for a in current, b in current
+            for c in _fusion_outcomes(fr, a, b)
+                if !seen[c]
+                    seen[c] = true
+                    changed = true
+                end
+            end
+        end
+    end
+    findall(seen)
+end
 
 
 
