@@ -80,23 +80,34 @@ end
     pairs, each block ordered by FP‑dimension."""
 function perm_vec_sd_conj(r::FusionRing; order::Symbol = :increasing)::Vector{Int}
     n  = rank(r)
-    cm = conjugation_matrix(r)            # antiparticle matrix
+    conj = conjugate_element(r)
     qd = fpdims(r)
 
-    self_dual = [i for i in 2:n if cm[i,i] == 1]
+    self_dual = [i for i in 2:n if conj(i) == i]
     sort!(self_dual; by = i -> qd[i], rev = (order == :decreasing))
 
     paired   = Set(self_dual)
-    conjlist = Int[]
+    pairs    = Tuple{Int,Int}[]
 
     for i in 2:n
-        j = cm[i,i]
-        if i != j && !(i in paired) && !(j in paired)
-            push!(conjlist, i, j)
-            push!(paired, i, j)
+        i in paired && continue
+        j = conj(i)
+        i == j && continue
+
+        a, b = i, j
+        if (order == :increasing && qd[a] > qd[b]) || (order == :decreasing && qd[a] < qd[b])
+            a, b = b, a
         end
+
+        push!(pairs, (a, b))
+        push!(paired, a)
+        push!(paired, b)
     end
-    out
+
+    sort!(pairs; by = p -> qd[p[1]], rev = (order == :decreasing))
+    conjlist = reduce(vcat, ([p[1], p[2]] for p in pairs); init = Int[])
+
+    vcat(1, self_dual, conjlist)
 end
 
 
