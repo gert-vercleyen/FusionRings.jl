@@ -333,50 +333,39 @@ function all_gradings(r::FusionRing)
 
 end
 
+
+"""
+    commutator(fr, sub) -> (els, subring)
+
+Centralizer-style commutator of subring `sub = (S, RS)` inside `fr`:
+return all simples `i` with `FusionOutcomes(i ⊗ i*) ⊆ S
+"""
+
+#Update 2: Fixed version uploaded
 #Added: from from updates/automorphisms
 # TODO: need to addapt to definition EGNO
 # TODO: not sure whether you need a ⊗ b ⊗ a* ⊗ b*, isn't a ⊗ b* enough?
-"""
-    commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int}) -> FusionRing
+function commutator(fr::FusionRing, sub::Tuple{Vector{Int},FusionRing})
+    is_commutative(fr) || error("commutator: ring must be commutative")
 
-Return  commutator subring `[A,B]`, defined as the smallest fusion-closed subring
-containing the support of each product `a ⊗ b ⊗ a* ⊗ b*` with `a ∈ A`, `b ∈ B`.
+    subEls, _ = sub
+    Sset = Set(subEls)
 
-`A` and `B` are vectors of simple indices (assumed to be subsets of `1:rank(fr)`).
-"""
-function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
-    r = rank(fr)
-    all(1 .≤ A .≤ r) || throw(ArgumentError("commutator: A has out-of-bounds indices"))
-    all(1 .≤ B .≤ r) || throw(ArgumentError("commutator: B has out-of-bounds indices"))
-
-    # Seed S0 with the union of supports of a ⊗ b ⊗ a* ⊗ b*
-    seen = falses(r)
-    @inbounds for a in A
-        aᵗ = _dual_index(fr, a)
-        for b in B
-            bᵗ = _dual_index(fr, b)
-
-            # First multiply a ⊗ b
-            for (u, mu) in tensor_product(fr, a, b)
-                mu == 0 && continue
-                # Then multiply by a* ⊗ b* ; we do it as (u ⊗ a*) ⊗ b*
-                for (v, mv) in tensor_product(fr, u, aᵗ)
-                    mv == 0 && continue
-                    for (w, mw) in tensor_product(fr, v, bᵗ)
-                        mw == 0 && continue
-                        seen[w] = true
-                    end
-                end
-            end
-        end
+    in_sub(i::Int)::Bool = begin
+        di = conjugate_element(fr, i)
+        outs = fusion_outcomes(fr, i, di)
+        all(in(Sset), outs)
     end
 
-    S0 = findall(seen)
-    isempty(S0) && (S0 = [1])  # at minimum, the unit
+    els0 = [i for i in 1:rank(fr) if in_sub(i)]
+    isempty(els0) && (els0 = [1])
 
-    # Close under fusion and build the subring
-    S = _fusion_closure(fr, S0)
-    _restrict_subring(fr, S; check_closed=true)
+    els = _fusion_closure(fr, els0)
+    return els, _restrict_subring(fr, els; check_closed=true)
+end
+
+function commutator(fr::FusionRing)
+    return derived_subring_commutator(fr)
 end
 
 
