@@ -197,6 +197,8 @@ function sub_fusion_rings(r::FusionRing)
         error("Method sub_fusion_rings not full implemented yet")
     end
 
+end
+
 
 # TODO: only implement if necessary for function sub_fusion_rings
 function sub_ring_tables(mat::Array{Int,2})
@@ -377,12 +379,15 @@ end
 
 
 #Added: from updates/commutator
-```Compute `irreps = adjoint_irreps(fr)` (partition of simples).
- Create group object with `n = length(irreps)` elements.
- `grading` maps each simple `x` to block index `a`.
- Multiplication table on the grading group is:
-   mt[a,b,c] = 1  iff  FusionOutcomes(i ⊗ j) ⊆ irreps[c]
-for all i ∈ irreps[a], j ∈ irreps[b].````
+"""
+Compute `irreps = adjoint_irreps(fr)` (partition of simples).
+
+Create group object with `n = length(irreps)` elements.
+`grading` maps each simple `x` to block index `a`.
+Multiplication table on the grading group is:
+    mt[a,b,c] = 1  iff  FusionOutcomes(i ⊗ j) ⊆ irreps[c]
+for all i ∈ irreps[a], j ∈ irreps[b].
+"""
 
 function universal_grading(fr::FusionRing)
     irreps = adjoint_irreps(fr)
@@ -884,6 +889,30 @@ function _diag_channel_groups(N::Array{Int,3})::Vector{Vector{Int}}
     end
     out
 end
+
+# TODO: use the code to generate sub_fusion_rings 
+"""
+    _internal_closed_subsets(fr, k) -> Vector{Vector{Int}}
+
+Return all fusion-closed subsets of size `k` containing the unit `1`,
+generated as `S = [1; T]` where `T` ranges over (k-1)-subsets of `2:r`.
+"""
+function _internal_closed_subsets(fr::FusionRing, k::Int)::Vector{Vector{Int}}
+    r = rank(fr)
+    (k <= 0 || k > r) && return Vector{Vector{Int}}()
+
+    if k == 1
+        return _internal_multiplication(fr, [1]) ? [[1]] : Vector{Vector{Int}}()
+    end
+
+    candidates = Vector{Vector{Int}}()
+    for T in combinations(collect(2:r), k - 1)
+        S = vcat(1, collect(T))
+        _internal_multiplication(fr, S) && push!(candidates, S)
+    end
+    return candidates
+end
+
 
 
 
