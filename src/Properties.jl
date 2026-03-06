@@ -289,9 +289,52 @@ function all_gradings(r::FusionRing)
 
 end
 
-function commutator(r::FusionRing)
+#Added: from from updates/automorphisms
+# TODO: need to addapt to definition EGNO
+# TODO: not sure whether you need a ⊗ b ⊗ a* ⊗ b*, isn't a ⊗ b* enough?
+"""
+    commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int}) -> FusionRing
 
+Return  commutator subring `[A,B]`, defined as the smallest fusion-closed subring
+containing the support of each product `a ⊗ b ⊗ a* ⊗ b*` with `a ∈ A`, `b ∈ B`.
+
+`A` and `B` are vectors of simple indices (assumed to be subsets of `1:rank(fr)`).
+"""
+function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
+    r = rank(fr)
+    all(1 .≤ A .≤ r) || throw(ArgumentError("commutator: A has out-of-bounds indices"))
+    all(1 .≤ B .≤ r) || throw(ArgumentError("commutator: B has out-of-bounds indices"))
+
+    # Seed S0 with the union of supports of a ⊗ b ⊗ a* ⊗ b*
+    seen = falses(r)
+    @inbounds for a in A
+        aᵗ = _dual_index(fr, a)
+        for b in B
+            bᵗ = _dual_index(fr, b)
+
+            # First multiply a ⊗ b
+            for (u, mu) in tensor_product(fr, a, b)
+                mu == 0 && continue
+                # Then multiply by a* ⊗ b* ; we do it as (u ⊗ a*) ⊗ b*
+                for (v, mv) in tensor_product(fr, u, aᵗ)
+                    mv == 0 && continue
+                    for (w, mw) in tensor_product(fr, v, bᵗ)
+                        mw == 0 && continue
+                        seen[w] = true
+                    end
+                end
+            end
+        end
+    end
+
+    S0 = findall(seen)
+    isempty(S0) && (S0 = [1])  # at minimum, the unit
+
+    # Close under fusion and build the subring
+    S = _fusion_closure(fr, S0)
+    _restrict_subring(fr, S; check_closed=true)
 end
+
 
 export characters 
 
