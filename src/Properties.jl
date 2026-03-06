@@ -107,7 +107,7 @@ export num_self_dual_non_self_dual
 function num_self_dual_non_self_dual(r::FusionRing)::Array{Int,1}
   sd  = count( x -> x == 1, diag( conjugation_matrix(r) ) )
   nsd = rank(r) - sd
-  return [ sd nsd ]
+    return Int[sd, nsd]
 end
 
 export nsdnsd
