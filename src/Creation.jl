@@ -1073,7 +1073,7 @@ groupname(grp) = try string(grp) catch; "Unknown Group" end
 export FusionRingHI, FusionRingTY
 
 
-
+#Added: from izumi
 """
     _is_group_table(tab) -> Bool
 
@@ -1127,3 +1127,53 @@ function _is_group_table(tab::AbstractMatrix{<:Integer})::Bool
 
     return true
 end
+
+
+#Added: from izumi
+"""
+    FusionRingTY(tab; names=String[]) -> FusionRing
+
+Build the Tambara–Yamagami fusion ring for a group with multiplication table `tab`.
+Rank is n+1 (group elements + one extra object).
+"""
+function FusionRingTY(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
+    _is_group_table(tab) || throw(ArgumentError("FusionRingTY: tab must be a group multiplication table (identity=1, associative, latin square)."))
+    n = size(tab, 1)
+    r = n + 1
+
+    mats = Matrix{Int}[]
+
+    # For each simple object i=1..r, build its fusion matrix N_i.
+    # This mirrors the Mathematica Which[...] table.
+    @inbounds for i in 1:r
+        Ni = zeros(Int, r, r)
+        for j in 1:r
+            if i <= n && j <= n
+                k = tab[i, j]
+                Ni[j, k] += 1
+            elseif i <= n && j > n
+                # group element ⊗ m = m
+                Ni[j, r] += 1
+            elseif i > n && j <= n
+                # m ⊗ group element = m
+                Ni[j, r] += 1
+            else
+                # m ⊗ m = sum_{g in G} g
+                for k in 1:n
+                    Ni[j, k] += 1
+                end
+            end
+        end
+        push!(mats, Ni)
+    end
+
+    mt = _mats_to_mt(mats)
+
+    # labels: 1..n are group elements, last is "m"
+    labels = [string(i) for i in 1:n]
+    push!(labels, "m")
+
+    default_names = isempty(names) ? String[] : names
+    return fusion_ring(mt; names=default_names, labels=labels)
+end
+
