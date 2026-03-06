@@ -175,35 +175,50 @@ end
 Check graded ring isomorphism by brute force for rank ≤ 8,
 else compare a spectral checksum of ∑_a N[a,:,:].
 """
-function is_equivalent( r1::FusionRing, r2::FusionRing )
-    !( which_permutation === missing )
+function is_equivalent(r1::FusionRing, r2::FusionRing; max_rank_bruteforce::Int = 8)::Bool
+    which_permutation(r1, r2; max_rank_bruteforce) !== missing
 end
-function which_permutation(fr1::FusionRing, fr2::FusionRing)
-    nsdnsd(fr1) == nsdnsd(fr2) || return missing
 
-    dims1 = fpdims(fr1)
-    dims2 = fpdims(fr2)
+"""
+    which_permutation(fr1, fr2; max_rank_bruteforce=8) -> Union{Vector{Int},Missing}
 
-    Base.sort(dims1) == Base.sort(dims2) || return missing 
+Return a permutation vector `p` (with `p[1] == 1`) such that
+`permute_mult_tab(multiplication_table(fr1), p) == multiplication_table(fr2)`.
 
+For ranks above `max_rank_bruteforce`, this returns `missing` (conservative: avoids
+false positives).
+"""
+function which_permutation(fr1::FusionRing, fr2::FusionRing; max_rank_bruteforce::Int = 8)
+    r1 = rank(fr1)
+    r2 = rank(fr2)
+    r1 == r2 || return missing
     r = r1
+
+    N1 = multiplication_table(fr1)
+    N2 = multiplication_table(fr2)
     sum(N1) == sum(N2) || return missing
 
-    # if r ≤ 8
-    #     using Combinatorics: permutations
-    #     for p in permutations(2:r)
-    #         perm = vcat(1, collect(p))
-    #         permute_mult_tab(N1, perm) == N2 && return true
-    #     end
-    #     return false
-    # else
-    #     using LinearAlgebra: eigvals
-    #     S1 = zeros(Int, r, r); S2 = zeros(Int, r, r)
-    #     @inbounds for a in 1:r
-    #         @views S1 .+= N1[a,:,:]
-    #         @views S2 .+= N2[a,:,:]
-    #     end
-    #     sort(eigvals(Matrix(S1))) == sort(eigvals(Matrix(S2)))
-    # end
-    # return (r, nothing)
+    # Optional quick invariants (skip if unavailable)
+    try
+        nsdnsd(fr1) == nsdnsd(fr2) || return missing
+    catch
+    end
+
+    try
+        d1 = fpdims(fr1)
+        d2 = fpdims(fr2)
+        if length(d1) == r && length(d2) == r
+            sort(string.(d1)) == sort(string.(d2)) || return missing
+        end
+    catch
+    end
+
+    r <= max_rank_bruteforce || return missing
+
+    # Brute force over permutations fixing the vacuum (index 1)
+    for p in Iterators.permutations(2:r)
+        perm = vcat(1, collect(p))
+        permute_mult_tab(N1, perm) == N2 && return perm
+    end
+    missing
 end
