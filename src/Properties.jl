@@ -225,9 +225,48 @@ function permutation_vector( mt1::Array{Int,3}, mt2::Array{Int,3})::Array{Int,1}
 
 end
 
-function automorphisms(r::FusionRing)::Array{Int,2}
-  
+#
+export fusion_ring_automorphisms
+"""
+    fusion_ring_automorphisms(fr) -> Vector{Vector{Int}}
+
+Return all permutations `p` with `_permute_multtab(N,p) == N`.
+Uses diagonal-channel pruning (same idea as Anyonica).
+"""
+function fusion_ring_automorphisms(fr::FusionRing)
+    N = multiplication_table(fr)
+    r = size(N, 1)
+
+    groups = _diag_channel_groups(N)
+    perms  = Vector{Vector{Int}}()
+    cur    = Vector{Int}(undef, r)
+    cur[1] = 1
+
+    function backtrack(gidx::Int)
+        if gidx > length(groups)
+            _permute_multtab(N, cur) == N && push!(perms, copy(cur))
+            return
+        end
+        G = groups[gidx]
+        for σ in Base.Iterators.permutations(G)
+			# TODO: the first element should always be 1 so no need to set 
+			# up special case
+            if 1 in G
+                σ[findfirst(==(1), G)] == 1 || continue
+            end
+            for (u, v) in zip(G, σ)
+                cur[u] = v
+            end
+            backtrack(gidx + 1)
+        end
+    end
+
+    backtrack(1)
+    unique!(perms)
+    sort!(perms, by = p -> (sum(p), p))
+    perms
 end
+
 
 export decompositions
 
@@ -334,11 +373,10 @@ function all_gradings(r::FusionRing)
 end
 
 
-"""
-    commutator(fr, sub) -> (els, subring)
+""" commutator(fr, sub) -> (els, subring)
 
 Centralizer-style commutator of subring `sub = (S, RS)` inside `fr`:
-return all simples `i` with `FusionOutcomes(i ⊗ i*) ⊆ S
+return all simples `i` with `FusionOutcomes(i ⊗ i*) ⊆ S`
 """
 
 #Update 2: Fixed version uploaded
@@ -518,17 +556,19 @@ end
 # There are some issues with the numeric characters function. 
 # Mainly the fact that the rows aren't sorted according to some 
 # criterion
+
+
 export numeric_characters
 """
     numeric_characters(R::FusionRing; tries::Int=64, tol=1e-12) -> (C, V)
 
-Return the **character table** `C::Matrix{ComplexF64}` of a **commutative** fusion ring `R`.
+#Return the **character table** `C::Matrix{ComplexF64}` of a **commutative** fusion ring `R`.
 
-Algorithm:
-1. Form a random real combination `M = ∑_k c_k N_k`.
-2. Eigen-decompose `M = V Λ V⁻¹`.
-3. Verify that every `V⁻¹ N_i V` is (numerically) diagonal. If not, retry.
-4. Normalize and sort V
+#Algorithm:
+#1. Form a random real combination `M = ∑_k c_k N_k`.
+#2. Eigen-decompose `M = V Λ V⁻¹`.
+#3. Verify that every `V⁻¹ N_i V` is (numerically) diagonal. If not, retry.
+#Normalize and sort V
 
 Throws if no common eigenbasis is found after `tries` attempts.
 """
@@ -604,15 +644,16 @@ function is_commutative(fr::FusionRing)
     true
 end
 
+
 """
-    conjugate_element(fr, a) -> Int
+  #conjugate_element(fr, a) -> Int
 
-Return the integer index of the dual (conjugate) simple object of `a`.
-Accepts an integer index, a `String`, or a `Symbol`.
+  #Return the integer index of the dual (conjugate) simple object of `a`.
+  #Accepts an integer index, a `String`, or a `Symbol`.
 
-Rationale: internal computations (e.g. composing with other index-based
-operations) are simpler when the result is an index rather than a label.
-Use `conjugate_label` if you need the string form.
+#Rationale: internal computations (e.g. composing with other index-based
+#operations) are simpler when the result is an index rather than a label.
+#Use `conjugate_label` if you need the string form.
 """
 function conjugate_element(fr::FusionRing, a)
     imap = indexmap(fr)
@@ -639,54 +680,6 @@ function is_sub_fusion_ring(fr::FusionRing, S::Vector)
         end
     end
     true
-end
-
-
-
-
-# TODO: need to addapt to definition EGNO
-# TODO: not sure whether you need a ⊗ b ⊗ a* ⊗ b*, isn't a ⊗ b* enough?
-"""
-    commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int}) -> FusionRing
-
-Return  commutator subring `[A,B]`, defined as the smallest fusion-closed subring
-containing the support of each product `a ⊗ b ⊗ a* ⊗ b*` with `a ∈ A`, `b ∈ B`.
-
-`A` and `B` are vectors of simple indices (assumed to be subsets of `1:rank(fr)`).
-"""
-function commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
-    r = rank(fr)
-    all(1 .≤ A .≤ r) || throw(ArgumentError("commutator: A has out-of-bounds indices"))
-    all(1 .≤ B .≤ r) || throw(ArgumentError("commutator: B has out-of-bounds indices"))
-
-    # Seed S0 with the union of supports of a ⊗ b ⊗ a* ⊗ b*
-    seen = falses(r)
-    @inbounds for a in A
-        aᵗ = _dual_index(fr, a)
-        for b in B
-            bᵗ = _dual_index(fr, b)
-
-            # First multiply a ⊗ b
-            for (u, mu) in tensor_product(fr, a, b)
-                mu == 0 && continue
-                # Then multiply by a* ⊗ b* - do it as (u ⊗ a*) ⊗ b*
-                for (v, mv) in tensor_product(fr, u, aᵗ)
-                    mv == 0 && continue
-                    for (w, mw) in tensor_product(fr, v, bᵗ)
-                        mw == 0 && continue
-                        seen[w] = true
-                    end
-                end
-            end
-        end
-    end
-
-    S0 = findall(seen)
-    isempty(S0) && (S0 = [1])  # at minimum, the unit
-
-    # Close under fusion and build the subring
-    S = _fusion_closure(fr, S0)
-    _restrict_subring(fr, S; check_closed=true)
 end
 
 
@@ -751,6 +744,39 @@ function _restrict_subring(fr::FusionRing, S::Vector{Int}; check_closed::Bool = 
     # it's better to wait until all fields of the FusionRing struct are finalized
     fusion_ring( Nsub )
 end
+
+export which_injection
+"""
+    #which_injection(subring, ring) -> Dict{Int,Int} or nothing
+
+#Find an injection of `subring` into `ring` by:
+#1) enumerating fusion-closed subsets `S ⊂ ring` of size rank(subring) containing 1,
+#2) comparing multiplication tables up to permutation.
+"""
+function which_injection(subring::FusionRing, ring::FusionRing)
+    rs = rank(subring)
+    rr = rank(ring)
+    rs > rr && return nothing
+
+    Nbig = multiplication_table(ring)
+    Nsub = multiplication_table(subring)
+
+	# TODO: should use sub_fusion_rings here
+    for S in _internal_closed_subsets(ring, rs)
+        Nres = @views Nbig[S, S, S]
+        perm = _permutation_vector_equiv(Nsub, Nres)
+        perm === nothing && continue
+
+        inj = Dict{Int,Int}()
+        @inbounds for i in 1:rs
+            inj[i] = S[perm[i]]
+        end
+        return inj
+    end
+    nothing
+end
+
+
 
 
 
