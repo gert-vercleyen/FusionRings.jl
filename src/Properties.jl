@@ -27,6 +27,19 @@ function tex_names(r::FusionRing)::Array{String,1}
   return r.texnames
 end
 
+
+#Added: from updates/commutator
+function _internal_multiplication(fr::FusionRing, S::Vector{Int})::Bool
+    Sset = Set(S)
+    @inbounds for i in S, j in S
+        for c in fusion_outcomes(fr, i, j)
+            c in Sset || return false
+        end
+    end
+    true
+end
+
+
 export labels
 
 function labels(r::FusionRing)::Array{String,1}
