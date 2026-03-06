@@ -1177,3 +1177,46 @@ function FusionRingTY(tab::AbstractMatrix{<:Integer}; names::Vector{String}=Stri
     return fusion_ring(mt; names=default_names, labels=labels)
 end
 
+
+#Added: from izumi
+"""
+    _inverse_vector(tab) -> inv
+
+Return inv[1..n] where inv[a] is the (unique) inverse of `a` in the group-table `tab`,
+i.e. tab[a, inv[a]] == 1.
+"""
+function _inverse_vector(tab::AbstractMatrix{<:Integer})::Vector{Int}
+    n = size(tab, 1)
+    inv = zeros(Int, n)
+    @inbounds for a in 1:n
+        found = 0
+        for b in 1:n
+            if tab[a, b] == 1
+                found = b
+                break
+            end
+        end
+        found == 0 && error("Group table has no inverse for element $a (no b with tab[a,b]=1).")
+        inv[a] = found
+    end
+    return inv
+end
+
+
+
+"""
+    _mats_to_mt(mats) -> mt
+
+Given mats[a] = N_a (rank×rank), return mt[a,b,c] = (N_a)[b,c].
+"""
+function _mats_to_mt(mats::Vector{<:AbstractMatrix{<:Integer}})::Array{Int,3}
+    r = length(mats)
+    r ≥ 1 || error("_mats_to_mt: empty mats")
+    mt = zeros(Int, r, r, r)
+    @inbounds for a in 1:r
+        A = mats[a]
+        size(A,1) == r && size(A,2) == r || error("_mats_to_mt: mat $a has wrong size $(size(A)) (expected $r×$r)")
+        mt[a, :, :] .= A
+    end
+    return mt
+end
