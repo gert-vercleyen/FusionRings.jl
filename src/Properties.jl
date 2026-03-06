@@ -831,6 +831,17 @@ function which_injection(subring::FusionRing, ring::FusionRing)
     nothing
 end
 
+#Added: from updates/commutator
+# Apply permutation P on all three indices: A'[i,j,k] = A[P[i],P[j],P[k]]
+function _permute_multtab(A::Array{Int,3}, P::Vector{Int})::Array{Int,3}
+    r = size(A, 1)
+    B = similar(A)
+    @inbounds for i in 1:r, j in 1:r, k in 1:r
+        B[i,j,k] = A[P[i], P[j], P[k]]
+    end
+    B
+end
+
 
 
 
