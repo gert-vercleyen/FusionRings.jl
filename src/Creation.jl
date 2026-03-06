@@ -1066,11 +1066,74 @@ groupname(grp) = try string(grp) catch; "Unknown Group" end
 # must already have:
 #   - struct FusionRing with fields `multiplication_table`, `names`, `labels` (etc.)
 #   - `fusion_ring(mt; names=..., labels=...)` constructor
-#
-# This file provides:
-#   FusionRingHI(tab; names=...)
-#   FusionRingTY(tab; names=...)
+
+
+#Added: from Iazumi  
 export FusionRingHI, FusionRingTY
+"""
+    FusionRingHI(tab; names=String[]) -> FusionRing
+
+Build the Haagerup–Izumi fusion ring from a *symmetric* group multiplication table `tab`.
+
+Rank is 2n. Objects are:
+- 1..n   : group elements
+- n+1..2n: "rho*g" sector (s X_g), indexed by g=1..n as n+g.
+
+
+"""
+function FusionRingHI(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
+    _is_group_table(tab) || throw(ArgumentError("FusionRingHI: tab must be a group multiplication table (identity=1, associative, latin square)."))
+    issymmetric(tab) || throw(ArgumentError("FusionRingHI: multiplication table must be symmetric."))
+
+    n = size(tab, 1)
+    r = 2n
+    inv = _inverse_vector(tab)
+
+    mats = Matrix{Int}[]
+
+    # For i in 1..2n build N_i as in  Mathematica Which cases.
+    @inbounds for i in 1:r
+        Ni = zeros(Int, r, r)
+        for j in 1:r
+            if i <= n && j <= n
+                # k == tab[[i,j]]
+                k = tab[i, j]
+                Ni[j, k] += 1
+
+            elseif i <= n && j > n
+                # k == n + tab[[i, j-n]]
+                k = n + tab[i, j - n]
+                Ni[j, k] += 1
+
+            elseif i > n && j <= n
+                # k == n + tab[[ inv[[j]], i-n ]]
+                k = n + tab[inv[j], i - n]
+                Ni[j, k] += 1
+
+            else
+                # i>n && j>n:
+                # If[ k == tab[[ i-n, inv[[j-n]] ]] || k > n, 1, 0 ]
+                # => all "rho-sector" (k>n) appear with multiplicity 1,
+                #    plus exactly one group element tab[i-n, inv[j-n]].
+                k0 = tab[i - n, inv[j - n]]
+                Ni[j, k0] += 1
+                for k in (n+1):r
+                    Ni[j, k] += 1
+                end
+            end
+        end
+        push!(mats, Ni)
+    end
+
+    mt = _mats_to_mt(mats)
+
+    # Labels: group elements then rho-sector
+    labels = [string(i) for i in 1:n]
+    append!(labels, ["ρ_$i" for i in 1:n])  
+    default_names = isempty(names) ? String[] : names
+    return fusion_ring(mt; names=default_names, labels=labels)
+end
+
 
 
 #Added: from izumi
