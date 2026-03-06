@@ -234,8 +234,50 @@ function is_equivalent_fusion_ring(ring1::FusionRing,ring2::FusionRing)::Bool
 
 end
 
-function permutation_vector( mt1::Array{Int,3}, mt2::Array{Int,3})::Array{Int,1}
 
+#Added: from updates/commutator
+"""
+    _permutation_vector_equiv(A, B) -> Vector{Int} or nothing
+
+Find `perm` such that `_permute_multtab(A, perm) == B`, using diagonal-channel
+groups for pruning. Returns `nothing` if not found.
+"""
+# TODO: we know that 1 is always the first element so we don't need to check for it
+function _permutation_vector_equiv(A::Array{Int,3}, B::Array{Int,3})
+    r = size(A, 1)
+    size(B, 1) == r || return nothing
+
+    grpA = _diag_channel_groups(A)
+    grpB = _diag_channel_groups(B)
+    sort(map(length, grpA)) == sort(map(length, grpB)) || return nothing
+
+    used = falses(length(grpB))
+    cur  = Vector{Int}(undef, r)
+    cur[1] = 1  # unit fixed
+
+    function backtrack(gidx::Int)::Bool
+        if gidx > length(grpA)
+            return _permute_multtab(A, cur) == B
+        end
+        GA = grpA[gidx]
+        for j in eachindex(grpB)
+            (used[j] || length(grpB[j]) != length(GA)) && continue
+            used[j] = true
+            for σ in Base.Iterators.permutations(grpB[j])
+                if 1 in GA
+                    σ[findfirst(==(1), GA)] == 1 || continue
+                end
+                for (u, v) in zip(GA, σ)
+                    cur[u] = v
+                end
+                backtrack(gidx + 1) && return true
+            end
+            used[j] = false
+        end
+        false
+    end
+
+    backtrack(1) ? cur : nothing
 end
 
 #
