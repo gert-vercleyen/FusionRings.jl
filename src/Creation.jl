@@ -1220,3 +1220,75 @@ function _mats_to_mt(mats::Vector{<:AbstractMatrix{<:Integer}})::Array{Int,3}
     end
     return mt
 end
+
+
+#Added: from izumi
+
+# Haagerup–Izumi (HI) and Tambara–Yamagami (TY) fusion rings
+# - Input `tab` is  n×n group multiplication table on {1,…,n} with identity = 1.
+# - Output `mt` is a rank×rank×rank multiplication tensor with structure constants
+#     mt[i,j,k] = multiplicity of simple k in i ⊗ j.
+# must already have:
+#   - struct FusionRing with fields `multiplication_table`, `names`, `labels` (etc.)
+#   - `fusion_ring(mt; names=..., labels=...)` constructor
+#
+# This file provides:
+#   FusionRingHI(tab; names=...)
+#   FusionRingTY(tab; names=...)
+export FusionRingHI, FusionRingTY
+
+
+
+"""
+    _is_group_table(tab) -> Bool
+
+Very explicit check that `tab` is a group multiplication table on {1..n}
+with identity element 1.
+
+Checks:
+- tab is n×n Int
+- entries are in 1..n
+- 1 acts as identity: tab[1,i]=i and tab[i,1]=i
+- each row and column is a permutation of 1..n
+- associativity: tab[ tab[i,j], k ] == tab[ i, tab[j,k] ]
+"""
+function _is_group_table(tab::AbstractMatrix{<:Integer})::Bool
+    n = size(tab, 1)
+    size(tab, 2) == n || return false
+    n ≥ 1 || return false
+
+    # Entries in 1..n
+    @inbounds for i in 1:n, j in 1:n
+        x = tab[i, j]
+        (1 <= x <= n) || return false
+    end
+
+    # Identity is 1
+    @inbounds for i in 1:n
+        tab[1, i] == i || return false
+        tab[i, 1] == i || return false
+    end
+
+    # Latin square: each row/col is a permutation of 1..n
+    seen = falses(n)
+    @inbounds for i in 1:n
+        fill!(seen, false)
+        for j in 1:n
+            seen[tab[i, j]] = true
+        end
+        all(seen) || return false
+
+        fill!(seen, false)
+        for j in 1:n
+            seen[tab[j, i]] = true
+        end
+        all(seen) || return false
+    end
+
+    # Associativity
+    @inbounds for i in 1:n, j in 1:n, k in 1:n
+        tab[tab[i, j], k] == tab[i, tab[j, k]] || return false
+    end
+
+    return true
+end
