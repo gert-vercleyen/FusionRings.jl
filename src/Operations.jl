@@ -43,27 +43,20 @@ function permute(r::FusionRing, perm::Vector{Int})::FusionRing
 
     # Metadata that needs re‑ordering (guard against `missing`)
     el_names = labels(r)[perm]
-    tex_names = isempty(r.texnames) ? r.texnames : r.texnames[perm]
+    tex_names = length(r.texnames) == n ? r.texnames[perm] : r.texnames
     fpdims   = r.frobenius_perron_dimensions === missing ?
-               missing : r.frobenius_perron_dimensions[perm]
+               missing : (length(r.frobenius_perron_dimensions) == n ? r.frobenius_perron_dimensions[perm] : r.frobenius_perron_dimensions)
     chars    = r.characters === missing ?
-               missing : r.characters[:, perm]
-
-    md = r.modular_data
-    md_perm = md === missing ? missing : [Dict(
-        "SMatrix"      => M["SMatrix"][perm, perm],
-        "TwistFactors" => M["TwistFactors"][:, perm]
-    ) for M in md]
+               missing : (ndims(r.characters) == 2 && size(r.characters, 2) == n ? r.characters[:, perm] : r.characters)
 
     return fusion_ring(mt_new;                       # core data
         names         = r.names,
         texnames      = tex_names,
         labels        = el_names,
         barcode       = r.barcode,
-        formal_code   = r.formal_code,
+        anyonwiki_code = r.anyonwiki_code,
         sub_fusion_rings = r.sub_fusion_rings,
         frobenius_perron_dimensions = fpdims,
-        modular_data  = md_perm,
         characters    = chars
     )
 end
