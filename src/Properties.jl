@@ -164,12 +164,6 @@ function anyonwiki_code(r::FusionRing)::Array{Int,1}
   return r.anyonwiki_code
 end
 
-export anyonwiki_code
-
-function anyonwiki_code(r::FusionRing)::Array{Int,1}
-  return r.anyonwiki_code
-end
-
 export barcode 
 
 function barcode(r::FusionRing)
@@ -715,32 +709,7 @@ end
 #operations) are simpler when the result is an index rather than a label.
 #Use `conjugate_label` if you need the string form.
 """
-function conjugate_element(fr::FusionRing, a)
-    imap = indexmap(fr)
-    ai = a isa Integer ? a : imap[String(a)]
-    C = conjugation_matrix(fr)
-    findfirst(==(1), C[ai, :])::Int
-end
 
-
-
-function is_sub_fusion_ring(fr::FusionRing, S::Vector)
-    # Accept Vector{String} preferred, but allow symbols via conversion
-    S2 = [s isa Symbol ? String(s) : String(s) for s in S]
-    Sset = Set(S2)
-    all(l -> l in Sset, labels(fr)[1:1]) || return false
-    imap = indexmap(fr)
-    for a in S2, b in S2
-        ai = imap[a]; bi = imap[b]
-        N = fusion_tensor(fr)[ai,bi,:]
-        for (ci,m) in enumerate(N)
-            m==0 && continue
-            c = labels(fr)[ci]
-            c in Sset || return false
-        end
-    end
-    true
-end
 
 
 export categories_with_properties
