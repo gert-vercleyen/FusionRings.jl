@@ -197,10 +197,25 @@ function injection_form( subring::FusionRing, ring::FusionRing )
 
 end
 
-# TODO: implement
-function is_sub_fusion_ring(subring::FusionRing,ring::FusionRing)::Bool
-  
+#Added: from updates/automorphisms_which_injections
+function is_sub_fusion_ring(fr::FusionRing, S::Vector)
+    # Accept Vector{String} preferred, but allow symbols via conversion
+    S2 = [s isa Symbol ? String(s) : String(s) for s in S]
+    Sset = Set(S2)
+    all(l -> l in Sset, labels(fr)[1:1]) || return false
+    imap = indexmap(fr)
+    for a in S2, b in S2
+        ai = imap[a]; bi = imap[b]
+        N = fusion_tensor(fr)[ai,bi,:]
+        for (ci,m) in enumerate(N)
+            m==0 && continue
+            c = labels(fr)[ci]
+            c in Sset || return false
+        end
+    end
+    true
 end
+
 
 function is_equivalent_fusion_ring(ring1::FusionRing,ring2::FusionRing)::Bool
 
