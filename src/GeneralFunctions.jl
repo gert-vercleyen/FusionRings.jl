@@ -56,12 +56,12 @@ function to_cyclotomic_field(
     )
     cfx, emb =
         to_composite_field(
-            x,
+            x;
             simplify_field,
             canonical_simplification
         )
 
-    to_cyclotomic_field( el, emb )
+    to_cyclotomic_field( cfx, emb )
 end
 
 function to_cyclotomic_field( x::AbsSimpleNumFieldElem, emb )
