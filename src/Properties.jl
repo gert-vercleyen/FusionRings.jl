@@ -281,8 +281,52 @@ function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
   
 end
 
-function universal_grading(r::FusionRing)
-  
+
+#Added: from updates/commutator
+```Compute `irreps = adjoint_irreps(fr)` (partition of simples).
+ Create group object with `n = length(irreps)` elements.
+ `grading` maps each simple `x` to block index `a`.
+ Multiplication table on the grading group is:
+   mt[a,b,c] = 1  iff  FusionOutcomes(i ⊗ j) ⊆ irreps[c]
+for all i ∈ irreps[a], j ∈ irreps[b].````
+
+function universal_grading(fr::FusionRing)
+    irreps = adjoint_irreps(fr)
+    n = length(irreps)
+
+    grading = Pair{Int,Int}[]
+    @inbounds for a in 1:n
+        for x in irreps[a]
+            push!(grading, x => a)
+        end
+    end
+    sort!(grading, by = p -> first(p))
+
+    function _cond(l1::Vector{Int}, l2::Vector{Int}, l3::Vector{Int})::Bool
+        S = Set(l3)
+        @inbounds for i in l1, j in l2
+            for c in fusion_outcomes(fr, i, j)
+                c in S || return false
+            end
+        end
+        true
+    end
+
+    mt = zeros(Int, n, n, n)
+    @inbounds for a in 1:n, b in 1:n, c in 1:n
+        mt[a,b,c] = _cond(irreps[a], irreps[b], irreps[c]) ? 1 : 0
+    end
+
+    groupRing = fusion_ring(mt; labels = string.(1:n))
+    return grading, replace_by_known(groupRing)
+end
+
+export UG
+UG(fr::FusionRing) = universal_grading(fr)
+
+
+function all_gradings(fr::FusionRing)
+    error("all_gradings not implemented yet")
 end
 
 function all_gradings(r::FusionRing)
