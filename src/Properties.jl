@@ -843,6 +843,49 @@ function _permute_multtab(A::Array{Int,3}, P::Vector{Int})::Array{Int,3}
 end
 
 
+#Added: from updates/commutator
+# -  compute the invariant:
+#       k(i) = |{ c : N[i,i,c] > 0 }|
+# - We partition indices by this invariant.
+# - Groups are sorted deterministically (increasing k, then index).
+
+# TODO: dont include channel for unit element in output. unit is always fixed
+"""
+    _diag_channel_groups(N) -> Vector{Vector{Int}}
+
+Partition indices by invariant k(i)=|{c : N[i,i,c]>0}|.
+
+Return groups in deterministic order:
+- increasing k
+- increasing indices within each group
+"""
+function _diag_channel_groups(N::Array{Int,3})::Vector{Vector{Int}}
+    r = size(N, 1)
+
+    k = Vector{Int}(undef, r)
+    @inbounds for i in 1:r
+        cnt = 0
+        for c in 1:r
+            (N[i,i,c] > 0) && (cnt += 1)
+        end
+        k[i] = cnt
+    end
+
+    groups = Dict{Int,Vector{Int}}()
+    @inbounds for i in 1:r
+        push!(get!(groups, k[i], Int[]), i)
+    end
+
+    out = Vector{Vector{Int}}()
+    for kk in sort!(collect(keys(groups)))
+        g = groups[kk]
+        sort!(g)
+        push!(out, g)
+    end
+    out
+end
+
+
 
 
 
