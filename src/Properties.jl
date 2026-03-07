@@ -399,14 +399,14 @@ function adjoint_fusion_ring(ring::FusionRing)::Tuple{Vector{Int},FusionRing}
 end
 
 #Added: from branch feat/adjoint_upper
-function upper_central_series(r::FusionRing)::Array{FusionRing,1}
-      chain = Tuple{Vector{Int},FusionRing}[]
+function upper_central_series(fr::FusionRing)
+    chain = Tuple{Vector{Int},FusionRing}[]
     push!(chain, (collect(1:rank(fr)), fr))
     while true
-        _S, _adj = adjoint_fusion_ring(last(chain)[2])
-        if !isempty(chain) && last(chain)[2] === _adj; break; end
-        push!(chain, (_S, _adj))
-        if length(_S)==1; break; end
+        S, adj = adjoint_fusion_ring(last(chain)[2])
+        last(chain)[2] === adj && break
+        push!(chain, (S, adj))
+        length(S) == 1 && break
     end
     chain
 end
