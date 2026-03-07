@@ -474,9 +474,6 @@ function all_gradings(fr::FusionRing)
     error("all_gradings not implemented yet")
 end
 
-function all_gradings(r::FusionRing)
-
-end
 
 
 """ commutator(fr, sub) -> (els, subring)
