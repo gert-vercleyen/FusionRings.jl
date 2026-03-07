@@ -1,7 +1,7 @@
 module FusionRings
 
 using Oscar, Combinatorics, JSON, Base.Threads, Accessors
-using LinearAlgebra:eigen 
+using LinearAlgebra: eigen, eigvals
 import Oscar: multiplication_table, is_commutative, rank, multiplicity
 import Base.names
 
@@ -40,6 +40,7 @@ function from_anyonwiki_code(v::AbstractVector{<:Integer})
 end
 
 const fawc = from_anyonwiki_code
+const awc = from_anyonwiki_code
 
 function __init__()
     # GLOBAL VARIABLES
