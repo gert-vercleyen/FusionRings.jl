@@ -238,10 +238,31 @@ function is_sub_fusion_ring(fr::FusionRing, S::Vector)
     true
 end
 
-
+#Added from feat/nilpotent
 function is_equivalent_fusion_ring(ring1::FusionRing,ring2::FusionRing)::Bool
-
+ r1 = rank(fr1); r2 = rank(fr2)
+    r1 == r2 || return false
+    r = r1
+    N1 = fusion_tensor(fr1); N2 = fusion_tensor(fr2)
+    sum(N1) == sum(N2) || return false
+    if r ≤ 8
+        for p in permutations(2:r)
+            perm = vcat(1, collect(p))
+            if permute_mult_tab(N1, perm) == N2
+                return true
+            end
+        end
+        return false
+    else
+        S1 = zeros(Int, r, r); S2 = zeros(Int, r, r)
+        for a in 1:r
+            @views S1 .+= N1[a,:,:]
+            @views S2 .+= N2[a,:,:]
+        end
+        sort(eigvals(Matrix(S1))) == sort(eigvals(Matrix(S2)))
+    end
 end
+
 
 
 #Added: from updates/commutator
