@@ -228,7 +228,7 @@ function is_sub_fusion_ring(fr::FusionRing, S::Vector)
     imap = indexmap(fr)
     for a in S2, b in S2
         ai = imap[a]; bi = imap[b]
-        N = fusion_tensor(fr)[ai,bi,:]
+        N = multiplication_table(fr)[ai,bi,:]
         for (ci,m) in enumerate(N)
             m==0 && continue
             c = labels(fr)[ci]
@@ -243,7 +243,7 @@ function is_equivalent_fusion_ring(ring1::FusionRing,ring2::FusionRing)::Bool
  r1 = rank(fr1); r2 = rank(fr2)
     r1 == r2 || return false
     r = r1
-    N1 = fusion_tensor(fr1); N2 = fusion_tensor(fr2)
+    N1 = multiplication_table(fr1); N2 = multiplication_table(fr2)
     sum(N1) == sum(N2) || return false
     if r ≤ 8
         for p in permutations(2:r)
