@@ -895,6 +895,41 @@ function _internal_closed_subsets(fr::FusionRing, k::Int)::Vector{Vector{Int}}
     return candidates
 end
 
+#Added: from updates/commutator
+function derived_subring_commutator(fr::FusionRing)::FusionRing
+    r = rank(fr)
+    return derived_subring_commutator(fr, collect(1:r), collect(1:r))
+end
+
+function derived_subring_commutator(fr::FusionRing, A::Vector{Int}, B::Vector{Int})::FusionRing
+    r = rank(fr)
+    all(1 .≤ A .≤ r) || throw(ArgumentError("derived_subring_commutator: A has out-of-bounds indices"))
+    all(1 .≤ B .≤ r) || throw(ArgumentError("derived_subring_commutator: B has out-of-bounds indices"))
+
+    seen = falses(r)
+    @inbounds for a in A
+        aᵗ = conjugate_element(fr, a)
+        for b in B
+            bᵗ = conjugate_element(fr, b)
+
+            # (a ⊗ b) ⊗ a* ⊗ b*
+            for u in fusion_outcomes(fr, a, b)
+                for v in fusion_outcomes(fr, u, aᵗ)
+                    for w in fusion_outcomes(fr, v, bᵗ)
+                        seen[w] = true
+                    end
+                end
+            end
+        end
+    end
+
+    S0 = findall(seen)
+    isempty(S0) && (S0 = [1])
+
+    S = _fusion_closure(fr, S0)
+    return _restrict_subring(fr, S; check_closed=true)
+end
+
 
 
 
