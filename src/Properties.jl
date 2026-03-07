@@ -184,6 +184,7 @@ function barcode(r::FusionRing)
 end
 
 function mult_tab_code(mat::Array{Int,2},mult::Int)::Int
+    error("mult_tab_code not implemented yet")
 end
 
 export sub_fusion_rings
@@ -412,11 +413,14 @@ function upper_central_series(fr::FusionRing)
 end
 
 function is_nilpotent(r::FusionRing)::Bool
-  
+    chain = upper_central_series(r)
+    # Nilpotent ⇔ iterated adjoint subring reaches the trivial (rank-1) subring.
+    last_set, last_ring = last(chain)
+    return length(last_set) == 1 && rank(last_ring) == 1
 end
 
 function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
-  
+    error("adjoint_irreps not implemented yet")
 end
 
 
