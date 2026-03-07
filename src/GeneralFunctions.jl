@@ -113,6 +113,30 @@ function replace_by_known( v; tol=1e-10 )
     end
 end
 
+
+#Added: was previously not present - relied on in properties.jl
+"""
+    indexmap(fr::FusionRing) -> Dict{String,Int}
+
+Return (and cache per-session) a dictionary mapping each simple object label
+to its index. This centralizes repeated constructions that previously
+occurred inline in multiple operations.
+
+The mapping is inexpensive to build for small ranks, but many functions call
+it repeatedly; having a single helper makes future memoization trivial if
+benchmarks suggest it matters.
+"""
+module_indexmaps = IdDict{FusionRing,Dict{String,Int}}()
+function indexmap(fr::FusionRing)
+    get!(module_indexmaps, fr) do
+        Dict(l=>i for (i,l) in enumerate(labels(fr)))
+    end
+end
+
+export indexmap
+
+
+
 export riffle
 
 function riffle(v::Vector{T}, w::Vector{T}) where {T}
