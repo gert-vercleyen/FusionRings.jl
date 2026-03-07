@@ -786,7 +786,7 @@ function _fusion_closure(fr::FusionRing, S0::Vector{Int})::Vector{Int}
         changed = false
         current = findall(seen)
         @inbounds for a in current, b in current
-            for c in _fusion_outcomes(fr, a, b)
+            for c in fusion_outcomes(fr, a, b)
                 if !seen[c]
                     seen[c] = true
                     changed = true
