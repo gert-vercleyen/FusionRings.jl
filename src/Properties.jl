@@ -1,6 +1,19 @@
+import Combinatorics: combinations
 #function change_fusion_ring_property(r::FusionRing, dict)
 
 #end
+
+
+#Added: from updates/commutator
+function element_to_string(mult, elem)::String
+  if mult == 0
+    return ""
+  elseif mult == 1
+    return elem
+  else
+    return string(mult) * " " * elem
+  end
+end
 
 
 export multiplication_table
