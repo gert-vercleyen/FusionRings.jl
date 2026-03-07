@@ -372,8 +372,17 @@ function adjoint_fusion_ring(ring::FusionRing)::Tuple{Vector{Int},FusionRing}
     end
 end
 
+#Added: from branch feat/adjoint_upper
 function upper_central_series(r::FusionRing)::Array{FusionRing,1}
-  
+      chain = Tuple{Vector{Int},FusionRing}[]
+    push!(chain, (collect(1:rank(fr)), fr))
+    while true
+        _S, _adj = adjoint_fusion_ring(last(chain)[2])
+        if !isempty(chain) && last(chain)[2] === _adj; break; end
+        push!(chain, (_S, _adj))
+        if length(_S)==1; break; end
+    end
+    chain
 end
 
 function is_nilpotent(r::FusionRing)::Bool
