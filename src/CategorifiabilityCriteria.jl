@@ -5,6 +5,11 @@
 # TODO: check whether s is correct
 
 # csp_criterion( fusion_ring ) returns true if fusion_ring does not have a unitary categorification due to the commutative schur product criterion
+
+# Compat helpers (ported from Mathematica naming)
+ISREAL(x) = isreal(x)
+lesserthan(x, y) = x < y
+
 function csp_criterion( ring::FusionRing )
     is_commutative( ring ) || error("Commutative Schur Product Criterion only applies to commutative fusion rings")
 
