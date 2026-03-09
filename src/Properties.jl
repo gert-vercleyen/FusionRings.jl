@@ -53,6 +53,8 @@ function _internal_multiplication(fr::FusionRing, S::Vector{Int})::Bool
 end
 
 
+
+
 export labels
 
 function labels(r::FusionRing)::Array{String,1}
@@ -155,8 +157,9 @@ end
 
 export conjugate_element
 
+
 function conjugate_element(r::FusionRing)
-   return i -> ( conjugation_matrix(r) * collect( 1:rank(r) ) )[i]
+    return a -> conjugate_element(r, a)
 end
 
 """
