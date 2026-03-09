@@ -215,7 +215,8 @@ end
 function sub_ring_tables(mat::Array{Int,2})
 
 end
-
+#best one to try on is ring w/fusion rings automorphism non-existent. 
+#like test with a ugly large ring, as many just give Z2
 # injection_form( subring, ring ) returns the vector of elements of
 # ring that form subring in the correct order  
 # TODO: implement 
