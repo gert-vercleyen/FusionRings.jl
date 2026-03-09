@@ -223,38 +223,36 @@ function injection_form( subring::FusionRing, ring::FusionRing )
 
 end
 
-#Added: from updates/automorphisms_which_injections
-function is_sub_fusion_ring(fr::FusionRing, S::Vector{Int})::Bool
-    r = rank(fr)
+"""
+    is_sub_fusion_ring(fr, S) -> Bool
+
+Return `true` iff `S` is a fusion-closed subset of simples containing the unit.
+
+`S` may be a vector of indices (`Int`/`Integer`) or a vector of labels
+(`String`/`Symbol`).
+"""
+function is_sub_fusion_ring(fr::FusionRing, S::AbstractVector)::Bool
     isempty(S) && return false
-    all(1 .<= S .<= r) || return false
-    (1 in S) || return false
+    r = rank(fr)
 
-    Sset = Set(S)
-    @inbounds for a in S, b in S
-        for c in fusion_outcomes(fr, a, b)
-            c in Sset || return false
+    inds::Vector{Int} = if all(x -> x isa Integer, S)
+        Int.(S)
+    else
+        imap = indexmap(fr)
+        out = Vector{Int}(undef, length(S))
+        for (k, x) in pairs(S)
+            lab = x isa String ? x : String(x)
+            idx = get(imap, lab, 0)
+            idx == 0 && return false
+            out[k] = idx
         end
+        out
     end
-    true
-end
 
-function is_sub_fusion_ring(fr::FusionRing, S::Vector)
-    # Accept Vector{String} preferred, but allow symbols via conversion
-    S2 = [s isa Symbol ? String(s) : String(s) for s in S]
-    Sset = Set(S2)
-    all(l -> l in Sset, labels(fr)[1:1]) || return false
-    imap = indexmap(fr)
-    for a in S2, b in S2
-        ai = imap[a]; bi = imap[b]
-        N = multiplication_table(fr)[ai,bi,:]
-        for (ci,m) in enumerate(N)
-            m==0 && continue
-            c = labels(fr)[ci]
-            c in Sset || return false
-        end
-    end
-    true
+    all(i -> 1 <= i <= r, inds) || return false
+    (1 in inds) || return false
+
+    _internal_multiplication(fr, unique(inds))
 end
 
 #Added
