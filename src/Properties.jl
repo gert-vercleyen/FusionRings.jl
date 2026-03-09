@@ -224,6 +224,21 @@ function injection_form( subring::FusionRing, ring::FusionRing )
 end
 
 #Added: from updates/automorphisms_which_injections
+function is_sub_fusion_ring(fr::FusionRing, S::Vector{Int})::Bool
+    r = rank(fr)
+    isempty(S) && return false
+    all(1 .<= S .<= r) || return false
+    (1 in S) || return false
+
+    Sset = Set(S)
+    @inbounds for a in S, b in S
+        for c in fusion_outcomes(fr, a, b)
+            c in Sset || return false
+        end
+    end
+    true
+end
+
 function is_sub_fusion_ring(fr::FusionRing, S::Vector)
     # Accept Vector{String} preferred, but allow symbols via conversion
     S2 = [s isa Symbol ? String(s) : String(s) for s in S]
@@ -240,6 +255,32 @@ function is_sub_fusion_ring(fr::FusionRing, S::Vector)
         end
     end
     true
+end
+
+#Added
+export sub_fusion_ring_subsets
+
+"""
+    sub_fusion_ring_subsets(fr::FusionRing) -> Vector{Vector{Int}}
+
+Enumerate all **proper, nontrivial** fusion-closed subsets of simples containing
+the unit (index 1), returned as **index vectors**.
+
+This is exponential in `rank(fr)`.
+"""
+function sub_fusion_ring_subsets(fr::FusionRing)::Vector{Vector{Int}}
+    r = rank(fr)
+    r <= 2 && return Vector{Vector{Int}}()
+
+    out = Vector{Vector{Int}}()
+    base = collect(2:r)
+    for k in 1:(r - 2)
+        for T in combinations(base, k)
+            S = vcat(1, collect(T))
+            is_sub_fusion_ring(fr, S) && push!(out, S)
+        end
+    end
+    out
 end
 
 #Added from feat/nilpotent
