@@ -1057,3 +1057,301 @@ metaplectic_fusion_ring( n::Int )::FusionRing = son2_fusion_ring(n)
 
 
 groupname(grp) = try string(grp) catch; "Unknown Group" end
+
+
+#Haagerup–Izumi (HI) and Tambara–Yamagami (TY) fusion rings
+# - Input `tab` is  n×n group multiplication table on {1,…,n} with identity = 1.
+# - Output `mt` is a rank×rank×rank multiplication tensor with structure constants
+#     mt[i,j,k] = multiplicity of simple k in i ⊗ j.
+# must already have:
+#   - struct FusionRing with fields `multiplication_table`, `names`, `labels` (etc.)
+#   - `fusion_ring(mt; names=..., labels=...)` constructor
+
+
+#Added: from Iazumi  
+export FusionRingHI, FusionRingTY
+"""
+    FusionRingHI(tab; names=String[]) -> FusionRing
+
+Build the Haagerup–Izumi fusion ring from a *symmetric* group multiplication table `tab`.
+
+Rank is 2n. Objects are:
+- 1..n   : group elements
+- n+1..2n: "rho*g" sector (s X_g), indexed by g=1..n as n+g.
+
+
+"""
+function FusionRingHI(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
+    _is_group_table(tab) || throw(ArgumentError("FusionRingHI: tab must be a group multiplication table (identity=1, associative, latin square)."))
+    issymmetric(tab) || throw(ArgumentError("FusionRingHI: multiplication table must be symmetric."))
+
+    n = size(tab, 1)
+    r = 2n
+    inv = _inverse_vector(tab)
+
+    mats = Matrix{Int}[]
+
+    # For i in 1..2n build N_i as in  Mathematica Which cases.
+    @inbounds for i in 1:r
+        Ni = zeros(Int, r, r)
+        for j in 1:r
+            if i <= n && j <= n
+                # k == tab[[i,j]]
+                k = tab[i, j]
+                Ni[j, k] += 1
+
+            elseif i <= n && j > n
+                # k == n + tab[[i, j-n]]
+                k = n + tab[i, j - n]
+                Ni[j, k] += 1
+
+            elseif i > n && j <= n
+                # k == n + tab[[ inv[[j]], i-n ]]
+                k = n + tab[inv[j], i - n]
+                Ni[j, k] += 1
+
+            else
+                # i>n && j>n:
+                # If[ k == tab[[ i-n, inv[[j-n]] ]] || k > n, 1, 0 ]
+                # => all "rho-sector" (k>n) appear with multiplicity 1,
+                #    plus exactly one group element tab[i-n, inv[j-n]].
+                k0 = tab[i - n, inv[j - n]]
+                Ni[j, k0] += 1
+                for k in (n+1):r
+                    Ni[j, k] += 1
+                end
+            end
+        end
+        push!(mats, Ni)
+    end
+
+    mt = _mats_to_mt(mats)
+
+    # Labels: group elements then rho-sector
+    labels = [string(i) for i in 1:n]
+    append!(labels, ["ρ_$i" for i in 1:n])  
+    default_names = isempty(names) ? String[] : names
+    return fusion_ring(mt; names=default_names, labels=labels)
+end
+
+
+
+#Added: from izumi
+"""
+    _is_group_table(tab) -> Bool
+
+Very explicit check that `tab` is a group multiplication table on {1..n}
+with identity element 1.
+
+Checks:
+- tab is n×n Int
+- entries are in 1..n
+- 1 acts as identity: tab[1,i]=i and tab[i,1]=i
+- each row and column is a permutation of 1..n
+- associativity: tab[ tab[i,j], k ] == tab[ i, tab[j,k] ]
+"""
+function _is_group_table(tab::AbstractMatrix{<:Integer})::Bool
+    n = size(tab, 1)
+    size(tab, 2) == n || return false
+    n ≥ 1 || return false
+
+    # Entries in 1..n
+    @inbounds for i in 1:n, j in 1:n
+        x = tab[i, j]
+        (1 <= x <= n) || return false
+    end
+
+    # Identity is 1
+    @inbounds for i in 1:n
+        tab[1, i] == i || return false
+        tab[i, 1] == i || return false
+    end
+
+    # Latin square: each row/col is a permutation of 1..n
+    seen = falses(n)
+    @inbounds for i in 1:n
+        fill!(seen, false)
+        for j in 1:n
+            seen[tab[i, j]] = true
+        end
+        all(seen) || return false
+
+        fill!(seen, false)
+        for j in 1:n
+            seen[tab[j, i]] = true
+        end
+        all(seen) || return false
+    end
+
+    # Associativity
+    @inbounds for i in 1:n, j in 1:n, k in 1:n
+        tab[tab[i, j], k] == tab[i, tab[j, k]] || return false
+    end
+
+    return true
+end
+
+
+#Added: from izumi
+"""
+    FusionRingTY(tab; names=String[]) -> FusionRing
+
+Build the Tambara–Yamagami fusion ring for a group with multiplication table `tab`.
+Rank is n+1 (group elements + one extra object).
+"""
+function FusionRingTY(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
+    _is_group_table(tab) || throw(ArgumentError("FusionRingTY: tab must be a group multiplication table (identity=1, associative, latin square)."))
+    n = size(tab, 1)
+    r = n + 1
+
+    mats = Matrix{Int}[]
+
+    # For each simple object i=1..r, build its fusion matrix N_i.
+    # This mirrors the Mathematica Which[...] table.
+    @inbounds for i in 1:r
+        Ni = zeros(Int, r, r)
+        for j in 1:r
+            if i <= n && j <= n
+                k = tab[i, j]
+                Ni[j, k] += 1
+            elseif i <= n && j > n
+                # group element ⊗ m = m
+                Ni[j, r] += 1
+            elseif i > n && j <= n
+                # m ⊗ group element = m
+                Ni[j, r] += 1
+            else
+                # m ⊗ m = sum_{g in G} g
+                for k in 1:n
+                    Ni[j, k] += 1
+                end
+            end
+        end
+        push!(mats, Ni)
+    end
+
+    mt = _mats_to_mt(mats)
+
+    # labels: 1..n are group elements, last is "m"
+    labels = [string(i) for i in 1:n]
+    push!(labels, "m")
+
+    default_names = isempty(names) ? String[] : names
+    return fusion_ring(mt; names=default_names, labels=labels)
+end
+
+
+#Added: from izumi
+"""
+    _inverse_vector(tab) -> inv
+
+Return inv[1..n] where inv[a] is the (unique) inverse of `a` in the group-table `tab`,
+i.e. tab[a, inv[a]] == 1.
+"""
+function _inverse_vector(tab::AbstractMatrix{<:Integer})::Vector{Int}
+    n = size(tab, 1)
+    inv = zeros(Int, n)
+    @inbounds for a in 1:n
+        found = 0
+        for b in 1:n
+            if tab[a, b] == 1
+                found = b
+                break
+            end
+        end
+        found == 0 && error("Group table has no inverse for element $a (no b with tab[a,b]=1).")
+        inv[a] = found
+    end
+    return inv
+end
+
+
+
+"""
+    _mats_to_mt(mats) -> mt
+
+Given mats[a] = N_a (rank×rank), return mt[a,b,c] = (N_a)[b,c].
+"""
+function _mats_to_mt(mats::Vector{<:AbstractMatrix{<:Integer}})::Array{Int,3}
+    r = length(mats)
+    r ≥ 1 || error("_mats_to_mt: empty mats")
+    mt = zeros(Int, r, r, r)
+    @inbounds for a in 1:r
+        A = mats[a]
+        size(A,1) == r && size(A,2) == r || error("_mats_to_mt: mat $a has wrong size $(size(A)) (expected $r×$r)")
+        mt[a, :, :] .= A
+    end
+    return mt
+end
+
+
+#Added: from izumi
+
+# Haagerup–Izumi (HI) and Tambara–Yamagami (TY) fusion rings
+# - Input `tab` is  n×n group multiplication table on {1,…,n} with identity = 1.
+# - Output `mt` is a rank×rank×rank multiplication tensor with structure constants
+#     mt[i,j,k] = multiplicity of simple k in i ⊗ j.
+# must already have:
+#   - struct FusionRing with fields `multiplication_table`, `names`, `labels` (etc.)
+#   - `fusion_ring(mt; names=..., labels=...)` constructor
+#
+# This file provides:
+#   FusionRingHI(tab; names=...)
+#   FusionRingTY(tab; names=...)
+export FusionRingHI, FusionRingTY
+
+
+
+"""
+    _is_group_table(tab) -> Bool
+
+Very explicit check that `tab` is a group multiplication table on {1..n}
+with identity element 1.
+
+Checks:
+- tab is n×n Int
+- entries are in 1..n
+- 1 acts as identity: tab[1,i]=i and tab[i,1]=i
+- each row and column is a permutation of 1..n
+- associativity: tab[ tab[i,j], k ] == tab[ i, tab[j,k] ]
+"""
+function _is_group_table(tab::AbstractMatrix{<:Integer})::Bool
+    n = size(tab, 1)
+    size(tab, 2) == n || return false
+    n ≥ 1 || return false
+
+    # Entries in 1..n
+    @inbounds for i in 1:n, j in 1:n
+        x = tab[i, j]
+        (1 <= x <= n) || return false
+    end
+
+    # Identity is 1
+    @inbounds for i in 1:n
+        tab[1, i] == i || return false
+        tab[i, 1] == i || return false
+    end
+
+    # Latin square: each row/col is a permutation of 1..n
+    seen = falses(n)
+    @inbounds for i in 1:n
+        fill!(seen, false)
+        for j in 1:n
+            seen[tab[i, j]] = true
+        end
+        all(seen) || return false
+
+        fill!(seen, false)
+        for j in 1:n
+            seen[tab[j, i]] = true
+        end
+        all(seen) || return false
+    end
+
+    # Associativity
+    @inbounds for i in 1:n, j in 1:n, k in 1:n
+        tab[tab[i, j], k] == tab[i, tab[j, k]] || return false
+    end
+
+    return true
+end

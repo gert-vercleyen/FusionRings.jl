@@ -43,26 +43,20 @@ function permute(r::FusionRing, perm::Vector{Int})::FusionRing
 
     # Metadata that needs re‑ordering (guard against `missing`)
     el_names = labels(r)[perm]
+    tex_names = length(r.texnames) == n ? r.texnames[perm] : r.texnames
     fpdims   = r.frobenius_perron_dimensions === missing ?
-               missing : r.frobenius_perron_dimensions[perm]
+               missing : (length(r.frobenius_perron_dimensions) == n ? r.frobenius_perron_dimensions[perm] : r.frobenius_perron_dimensions)
     chars    = r.characters === missing ?
-               missing : r.characters[:, perm]
-
-    md = r.modular_data
-    md_perm = md === missing ? missing : [Dict(
-        "SMatrix"      => M["SMatrix"][perm, perm],
-        "TwistFactors" => M["TwistFactors"][:, perm]
-    ) for M in md]
+               missing : (ndims(r.characters) == 2 && size(r.characters, 2) == n ? r.characters[:, perm] : r.characters)
 
     return fusion_ring(mt_new;                       # core data
         names         = r.names,
-        texnames      = r.labels,
-        labels = el_names,
+        texnames      = tex_names,
+        labels        = el_names,
         barcode       = r.barcode,
-        formal_code   = r.formal_code,
+        anyonwiki_code = r.anyonwiki_code,
         sub_fusion_rings = r.sub_fusion_rings,
         frobenius_perron_dimensions = fpdims,
-        modular_data  = md_perm,
         characters    = chars
     )
 end
@@ -80,23 +74,34 @@ end
     pairs, each block ordered by FP‑dimension."""
 function perm_vec_sd_conj(r::FusionRing; order::Symbol = :increasing)::Vector{Int}
     n  = rank(r)
-    cm = conjugation_matrix(r)            # antiparticle matrix
+    conj = conjugate_element(r)
     qd = fpdims(r)
 
-    self_dual = [i for i in 2:n if cm[i,i] == 1]
+    self_dual = [i for i in 2:n if conj(i) == i]
     sort!(self_dual; by = i -> qd[i], rev = (order == :decreasing))
 
     paired   = Set(self_dual)
-    conjlist = Int[]
+    pairs    = Tuple{Int,Int}[]
 
     for i in 2:n
-        j = cm[i,i]
-        if i != j && !(i in paired) && !(j in paired)
-            push!(conjlist, i, j)
-            push!(paired, i, j)
+        i in paired && continue
+        j = conj(i)
+        i == j && continue
+
+        a, b = i, j
+        if (order == :increasing && qd[a] > qd[b]) || (order == :decreasing && qd[a] < qd[b])
+            a, b = b, a
         end
+
+        push!(pairs, (a, b))
+        push!(paired, a)
+        push!(paired, b)
     end
-    out
+
+    sort!(pairs; by = p -> qd[p[1]], rev = (order == :decreasing))
+    conjlist = reduce(vcat, ([p[1], p[2]] for p in pairs); init = Int[])
+
+    vcat(1, self_dual, conjlist)
 end
 
 
@@ -115,9 +120,18 @@ function tensor_product(r1::FusionRing, r2::FusionRing)::FusionRing
     # Assemble element names
     elnames = [ string(e1, "⊗", e2) for e1 in labels(r1) for e2 in labels(r2) ]
 
+    names_tp = (isempty(names(r1)) || isempty(names(r2))) ? String[] :
+        [string(names(r1)[1], "⊗", names(r2)[1])]
+
+    fpdims_new = try
+        [d1 * d2 for d1 in fpdims(r1) for d2 in fpdims(r2)]
+    catch
+        missing
+    end
+
     return fusion_ring(
         mt; 
-        names = names, 
+        names = names_tp, 
         labels = elnames, 
         frobenius_perron_dimensions = fpdims_new
     )
@@ -161,35 +175,50 @@ end
 Check graded ring isomorphism by brute force for rank ≤ 8,
 else compare a spectral checksum of ∑_a N[a,:,:].
 """
-function is_equivalent( r1::FusionRing, r2::FusionRing )
-    !( which_permutation === missing )
+function is_equivalent(r1::FusionRing, r2::FusionRing; max_rank_bruteforce::Int = 8)::Bool
+    which_permutation(r1, r2; max_rank_bruteforce) !== missing
 end
-function which_permutation(fr1::FusionRing, fr2::FusionRing)
-    nsdnsd(fr1) == nsdnsd(fr2) || return missing
 
-    dims1 = fpdims(fr1)
-    dims2 = fpdims(fr2)
+"""
+    which_permutation(fr1, fr2; max_rank_bruteforce=8) -> Union{Vector{Int},Missing}
 
-    Base.sort(dims1) == Base.sort(dims2) || return missing 
+Return a permutation vector `p` (with `p[1] == 1`) such that
+`permute_mult_tab(multiplication_table(fr1), p) == multiplication_table(fr2)`.
 
+For ranks above `max_rank_bruteforce`, this returns `missing` (conservative: avoids
+false positives).
+"""
+function which_permutation(fr1::FusionRing, fr2::FusionRing; max_rank_bruteforce::Int = 8)
+    r1 = rank(fr1)
+    r2 = rank(fr2)
+    r1 == r2 || return missing
     r = r1
+
+    N1 = multiplication_table(fr1)
+    N2 = multiplication_table(fr2)
     sum(N1) == sum(N2) || return missing
 
-    # if r ≤ 8
-    #     using Combinatorics: permutations
-    #     for p in permutations(2:r)
-    #         perm = vcat(1, collect(p))
-    #         permute_mult_tab(N1, perm) == N2 && return true
-    #     end
-    #     return false
-    # else
-    #     using LinearAlgebra: eigvals
-    #     S1 = zeros(Int, r, r); S2 = zeros(Int, r, r)
-    #     @inbounds for a in 1:r
-    #         @views S1 .+= N1[a,:,:]
-    #         @views S2 .+= N2[a,:,:]
-    #     end
-    #     sort(eigvals(Matrix(S1))) == sort(eigvals(Matrix(S2)))
-    # end
-    # return (r, nothing)
+    # Optional quick invariants (skip if unavailable)
+    try
+        nsdnsd(fr1) == nsdnsd(fr2) || return missing
+    catch
+    end
+
+    try
+        d1 = fpdims(fr1)
+        d2 = fpdims(fr2)
+        if length(d1) == r && length(d2) == r
+            sort(string.(d1)) == sort(string.(d2)) || return missing
+        end
+    catch
+    end
+
+    r <= max_rank_bruteforce || return missing
+
+    # Brute force over permutations fixing the vacuum (index 1)
+    for p in Iterators.permutations(2:r)
+        perm = vcat(1, collect(p))
+        permute_mult_tab(N1, perm) == N2 && return perm
+    end
+    missing
 end

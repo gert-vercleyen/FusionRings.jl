@@ -53,7 +53,7 @@ Pretty prints the multiplication table as strings (no mutation).
 """
 function print_multiplication_table(fr::FusionRing; include_zeros::Bool=false)
     N = multiplication_table(fr)
-    names = fr.element_names
+    names = labels(fr)
     r = length(names)
     head = "× │ " * join(names, " │ ")
     sep  = "──┼" * "───┼"^(r-1) * "──"
@@ -123,11 +123,12 @@ end
 
 "Pretty one-liner: `a × b = ...` using printed names; `a,b` are indices."
 function product_string(fr::FusionRing, a::Int, b::Int)
-    rhs = let d = fusion_product(fr,a,b), names = fr.element_names
+    names = labels(fr)
+    rhs = let d = fusion_product(fr,a,b)
         isempty(d) ? "0" :
             join([ m==1 ? names[c] : string(m," ",names[c]) for (c,m) in d ], " ⊕ ")
     end
-    string(fr.element_names[a], " × ", fr.element_names[b], " = ", rhs)
+    string(names[a], " × ", names[b], " = ", rhs)
 end
 
 function export_tex_reps( filename::String,  v::Vector{QQBarFieldElem}; try_cyclo = false )

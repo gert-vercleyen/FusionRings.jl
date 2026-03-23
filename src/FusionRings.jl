@@ -1,7 +1,7 @@
 module FusionRings
 
 using Oscar, Combinatorics, JSON, Base.Threads, Accessors
-using LinearAlgebra:eigen 
+using LinearAlgebra: eigen, eigvals
 import Oscar: multiplication_table, is_commutative, rank, multiplicity
 import Base.names
 
@@ -13,6 +13,34 @@ include("ImportData.jl")
 include("FormattingAndPrinting.jl")
 
 export qqb_dict, fusion_ring_list, frl, fusion_ring_dict, frd, from_anyonwiki_code, fawc
+
+"""Internal helper: ensure ring lookup dictionary has been initialized."""
+function _ensure_frd_initialized()
+    isdefined(@__MODULE__, :frd) || error("FusionRings data not initialized (frd is undefined).")
+    frd isa Dict || error("FusionRings data not initialized (frd is not a Dict).")
+    nothing
+end
+
+"""
+    from_anyonwiki_code(r, m, nnsd, i) -> FusionRing
+    from_anyonwiki_code(v::AbstractVector{<:Integer}) -> FusionRing
+
+Lookup a stored fusion ring by its AnyonWiki code `[r, m, nnsd, i]`.
+This requires package data to be loaded (normally happens during `__init__`).
+"""
+function from_anyonwiki_code(r::Integer, m::Integer, nnsd::Integer, i::Integer)
+    _ensure_frd_initialized()
+    frd[Int[r, m, nnsd, i]]
+end
+
+function from_anyonwiki_code(v::AbstractVector{<:Integer})
+    _ensure_frd_initialized()
+    length(v) == 4 || error("anyonwiki_code expects a vector of 4 integers.")
+    frd[Int.(collect(v))]
+end
+
+const fawc = from_anyonwiki_code
+const awc = from_anyonwiki_code
 
 function __init__()
     # GLOBAL VARIABLES
@@ -39,19 +67,6 @@ function __init__()
 
     global fusion_ring_dict = Dict( anyonwiki_code(r) => r for r in frl )
     global frd = fusion_ring_dict
-
-    function from_anyonwiki_code( r, m, nnsd, i )
-         frd[ [ r, m, nnsd, i ] ]
-    end
-    
-    function from_anyonwiki_code( v::Vector{Int64} )
-        if length( v ) == 4
-            return frd[ v ]
-        else
-            error( "anyonwiki_code expects a vector of 4 Int64's." )
-        end
-    end
-    global fawc = from_anyonwiki_code
 end
 
 end
