@@ -23,19 +23,6 @@ function indexmap(fr::FusionRing)
     end
 end
 
-
-#Added: from updates/commutator
-function element_to_string(mult, elem)::String
-  if mult == 0
-    return ""
-  elseif mult == 1
-    return elem
-  else
-    return string(mult) * " " * elem
-  end
-end
-
-
 export multiplication_table
 
 function multiplication_table(r::FusionRing)::Array{Int,3}

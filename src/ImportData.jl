@@ -67,7 +67,7 @@ from_qqb_id( a::Matrix{String} ) = from_qqb_id.(a)
 # we should remove it since it slows down the import
 
 # formal code
-function fcfromjs( js::JSON.Object{String, Any} )::Vector{Int64}
+function fcfromjs( js )::Vector{Int64}
     k = keys( js )
 
     if "formal_code" ∈ k
@@ -86,7 +86,7 @@ function fcfromjs( js::JSON.Object{String, Any} )::Vector{Int64}
 end
 
 # mult tab
-function mtfromjs( js::JSON.Object{String, Any} )::Array{Int64, 3}
+function mtfromjs( js )::Array{Int64, 3}
   jsmt = js["mult_tab"]
   r = length(jsmt)
   mt = zeros(Int, r, r, r)
@@ -97,12 +97,12 @@ function mtfromjs( js::JSON.Object{String, Any} )::Array{Int64, 3}
 end
 
 # barcode
-function bcfromjs(js::JSON.Object{String, Any})::ZZRingElem
+function bcfromjs(js)::ZZRingElem
   ZZ( parse( BigInt, js["barcode"] ) )
 end
 
 # tensor product decompositions
-function tpdfromjs(js::JSON.Object{String, Any})
+function tpdfromjs(js)
   tps = js["tensor_product_decompositions"]
 
     if length(tps) == 0
@@ -122,7 +122,7 @@ function tpdfromjs(js::JSON.Object{String, Any})
 end
 
 # sub-fusion rings
-function sfrfromjs(js::JSON.Object{String, Any})
+function sfrfromjs(js)
     srs = js["non_trivial_sub_fusion_rings"]
 
     # if length(srs) == 0
@@ -149,7 +149,7 @@ function vec_to_cflt( v::Vector{Any} )::ComplexF64
 end
 
 # numeric characters
-function nchfromjs(js::JSON.Object{String, Any})::Union{Missing,Matrix{ComplexF64}}
+function nchfromjs(js)::Union{Missing,Matrix{ComplexF64}}
     ncvecs = js["numeric_characters"]
     if ncvecs === nothing
         return missing
@@ -160,7 +160,7 @@ function nchfromjs(js::JSON.Object{String, Any})::Union{Missing,Matrix{ComplexF6
 end
 
 # characters
-function chfromjs(js::JSON.Object{String, Any})
+function chfromjs(js)
     try
         vecs = js["characters"]
         string.(mapreduce( permutedims, vcat, vecs))
@@ -170,17 +170,17 @@ function chfromjs(js::JSON.Object{String, Any})
 end
 
 # fpdims
-function nfpdsfromjs(js::JSON.Object{String, Any})::Vector{ComplexF64}
+function nfpdsfromjs(js)::Vector{ComplexF64}
     nfpdims = js["numeric_frobenius_perron_dimensions"]
     vec_to_cflt.( nfpdims )
 end
 
 # fpdim
-function nfpdfromjs(js::JSON.Object{String, Any})::ComplexF64
+function nfpdfromjs(js)::ComplexF64
     vec_to_cflt( js["numeric_frobenius_perron_dimension"] )
 end
 
-function cfromjs(js::JSON.Object{String, Any})
+function cfromjs(js)
   # Known to be non categorifiable
   if js["categorifiable"] === false
     return false 
@@ -198,7 +198,7 @@ end
 
 # TODO: only works for cats given by anyonwiki_code
 # categorifications
-function ctsfromjs(js::JSON.Object{String, Any})
+function ctsfromjs(js)
     cats = js["categorifications"]
 
     if cats === nothing # Nothing known about categorifiability
@@ -210,14 +210,14 @@ function ctsfromjs(js::JSON.Object{String, Any})
     end
 end
 
-function ctpfromjs(js::JSON.Object{String, Any})
+function ctpfromjs(js)
     props = js["has_categories_with_props"]
 end
 
 # TODO: it should be possible to add type to output but I get the following error when importing FR^{2,10,0}_{1}:
 # MethodError: Cannot `convert` an object of type Vector{Dict{String, Array}} to an object of type Dict{String, Array}
 # The error is not reproducible when using the REPL
-function npsrfromjs(js::JSON.Object{String, Any})#::Vector{Dict{String, Array}}
+function npsrfromjs(js)#::Vector{Dict{String, Array}}
     try
     npsr = js["numeric_projective_SL2Z_reps"]
     if npsr == Any[]
@@ -246,7 +246,7 @@ function npsrfromjs(js::JSON.Object{String, Any})#::Vector{Dict{String, Array}}
 end
 
 # import names. Might fail
-function nfromjs(js::JSON.Object{String, Any})
+function nfromjs(js)
     try
         Vector{String}( js["names"] )
     catch e
@@ -255,7 +255,7 @@ function nfromjs(js::JSON.Object{String, Any})
 end
 
 # import texnames. Might fail
-function tnfromjs(js::JSON.Object{String, Any})
+function tnfromjs(js)
     try
         Vector{String}( js["texnames"] )
     catch e
@@ -264,7 +264,7 @@ function tnfromjs(js::JSON.Object{String, Any})
 end
 
 # import projective SL2Z reps
-function psrfromjs(js::JSON.Object{String, Any})
+function psrfromjs(js)
     k = keys( js )
     if "projective_SL2Z_reps" ∈ k
         psr = js["projective_SL2Z_reps"]
@@ -307,7 +307,7 @@ end
 
 
 # import fpdim. Might fail
-function fpdfromjs(js::JSON.Object{String, Any})
+function fpdfromjs(js)
     try
         from_qqb_id(js["frobenius_perron_dimension"])
     catch e
@@ -315,7 +315,7 @@ function fpdfromjs(js::JSON.Object{String, Any})
     end
 end
 
-function fpdsfromjs(js::JSON.Object{String, Any})
+function fpdsfromjs(js)
     try
         from_qqb_id(js["frobenius_perron_dimensions"])
     catch e
@@ -323,7 +323,7 @@ function fpdsfromjs(js::JSON.Object{String, Any})
     end
 end
 
-function ncrfromjs(js::JSON.Object{String, Any})
+function ncrfromjs(js)
     k = keys( js )
     if "non_cat_reasons" ∈ k
         return js["non_cat_reasons"]
