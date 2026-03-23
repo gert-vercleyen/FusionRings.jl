@@ -192,22 +192,54 @@ end
 
 export sub_fusion_rings
 
-#TODO needs to be implemented for when data is not available
 
+export sub_fusion_rings
+#Unsure what data format is - if stored JSON/Data already uses injections then convert to subset form
 function sub_fusion_rings(r::FusionRing)
     dictvec = r.sub_fusion_rings
+
     if dictvec !== missing
-        [
+        return [
             Dict(
-                "injection"   => dict["injection"],
+                "subset" => begin
+                    if haskey(dict, "subset")
+                        dict["subset"]
+                    elseif haskey(dict, "injection")
+                        inj = dict["injection"]
+                        inj isa AbstractVector && return inj
+                        inj isa Dict && return [inj[i] for i in sort(collect(keys(inj)))]
+                        error("Unsupported stored sub_fusion_rings injection format")
+                    else
+                        error("Stored sub_fusion_rings entry has neither \"subset\" nor \"injection\"")
+                    end
+                end,
                 "fusion_ring" => awc(dict["anyonwiki_code"])
             )
             for dict in dictvec
         ]
-    else
-        error("Method sub_fusion_rings not full implemented yet")
     end
 
+    if rank(r) == 1
+        return Dict{String,Any}[]
+    end
+
+    out = Vector{Dict{String,Any}}()
+
+    for S in sub_fusion_ring_subsets(r)
+        sub_raw = _restrict_subring(r, copy(S); check_closed = true)
+        sub = try
+            replace_by_known(sub_raw)
+        catch
+            sub_raw
+        end
+
+        push!(out, Dict(
+            "subset"      => S,
+            "fusion_ring" => sub
+        ))
+    end
+
+    return out
 end
 
 
