@@ -215,6 +215,66 @@
         )
     end
 
+    #print_multp_table:
+
+     @testset "print_multiplication_table" begin
+        z2 = zn_fusion_ring(2)
+
+        out1 = sprint(io -> redirect_stdout(io) do
+            print_multiplication_table(z2)
+        end)
+
+        check_true(
+            occursin("× │ 0 │ 1", out1),
+            "print_multiplication_table(Z2) output did not contain the expected header"
+        )
+
+        check_true(
+            occursin("0 × 0 = 0", product_string(z2, 1, 1)),
+            "sanity check on product_string(Z2,1,1) failed while testing print_multiplication_table"
+        )
+
+        check_true(
+            occursin("0 │ 0 │ 1", out1),
+            "print_multiplication_table(Z2) output did not contain the expected first row"
+        )
+
+        check_true(
+            occursin("1 │ 1 │ 0", out1),
+            "print_multiplication_table(Z2) output did not contain the expected second row"
+        )
+
+        out2 = sprint(io -> redirect_stdout(io) do
+            print_multiplication_table(z2; include_zeros = true)
+        end)
+
+        check_true(
+            occursin("0 0", out2) || occursin("0 1", out2),
+            "print_multiplication_table(Z2; include_zeros=true) did not appear to include zero-multiplicity terms"
+        )
+    end
+
+    @testset "pmt alias" begin
+        z2 = zn_fusion_ring(2)
+
+        out_pmt = sprint(io -> redirect_stdout(io) do
+            pmt(z2)
+        end)
+
+        out_full = sprint(io -> redirect_stdout(io) do
+            print_multiplication_table(z2)
+        end)
+
+        check_equal(
+            out_pmt,
+            out_full,
+            "pmt(z2) did not produce the same output as print_multiplication_table(z2)"
+        )
+    end
+
+
+
+
 
 
 
