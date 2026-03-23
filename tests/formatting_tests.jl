@@ -272,6 +272,25 @@
         )
     end
 
+        # Base.show for FusionRing
+
+     @testset "Base.show(::FusionRing)" begin
+        z2 = zn_fusion_ring(2)
+        shown = sprint(show, z2)
+
+        check_true(
+            startswith(shown, "FR("),
+            "show(z2) did not begin with \"FR(\""
+        )
+
+        check_true(
+            endswith(shown, ")"),
+            "show(z2) did not end with \")\""
+        )
+    end
+
+
+
 
 
 
