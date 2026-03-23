@@ -334,7 +334,69 @@
         end
     end
 
-    
+    #fusion_ring_from_group:
+
+     @testset "fusion_ring_from_group" begin
+        z2_tab = [
+            1 2
+            2 1
+        ]
+
+        z3_tab = [
+            1 2 3
+            2 3 1
+            3 1 2
+        ]
+
+        bad_not_group = [
+            1 1
+            2 2
+        ]
+
+        @testset "valid group tables" begin
+            r2 = fusion_ring_from_group(z2_tab)
+            r3 = fusion_ring_from_group(z3_tab)
+
+            check_equal(rank(r2), 2,
+                "fusion_ring_from_group on the Z2 Cayley table did not produce rank 2")
+            check_equal(rank(r3), 3,
+                "fusion_ring_from_group on the Z3 Cayley table did not produce rank 3")
+
+            check_equal(size(multiplication_table(r2)), (2,2,2),
+                "fusion_ring_from_group on the Z2 Cayley table had wrong multiplication-table size")
+            check_equal(size(multiplication_table(r3)), (3,3,3),
+                "fusion_ring_from_group on the Z3 Cayley table had wrong multiplication-table size")
+
+            check_true(is_group_ring(r2),
+                "fusion_ring_from_group on the Z2 Cayley table was not detected as a group ring")
+            check_true(is_group_ring(r3),
+                "fusion_ring_from_group on the Z3 Cayley table was not detected as a group ring")
+            check_true(is_commutative(r2),
+                "fusion_ring_from_group on the Z2 Cayley table was not commutative")
+            check_true(is_commutative(r3),
+                "fusion_ring_from_group on the Z3 Cayley table was not commutative")
+        end
+
+        @testset "matches zn_fusion_ring on cyclic examples" begin
+            r2 = fusion_ring_from_group(z2_tab)
+            r3 = fusion_ring_from_group(z3_tab)
+
+            check_equal(multiplication_table(r2), multiplication_table(zn_fusion_ring(2)),
+                "fusion_ring_from_group(Z2 table) did not match zn_fusion_ring(2)")
+            check_equal(multiplication_table(r3), multiplication_table(zn_fusion_ring(3)),
+                "fusion_ring_from_group(Z3 table) did not match zn_fusion_ring(3)")
+        end
+
+        @testset "invalid group table is rejected" begin
+            check_throws(
+                () -> fusion_ring_from_group(bad_not_group),
+                "fusion_ring_from_group accepted a table that was not a valid Cayley table"
+            )
+        end
+    end
+
+
+
 
 
 
