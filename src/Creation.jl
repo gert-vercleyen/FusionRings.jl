@@ -284,11 +284,19 @@ hi_fusion_ring(grp)       = throw(ErrorException("hi_fusion_ring (Haagerup–Izu
 end
 
 # convert a list of fusion matrices mats[a][b,c] into mt[a,b,c]
-function _mats_to_mt(mats::Vector{Matrix{Int}})::Array{Int,3}
+"""
+    _mats_to_mt(mats) -> mt
+
+Given mats[a] = N_a (rank×rank), return mt[a,b,c] = (N_a)[b,c].
+"""
+function _mats_to_mt(mats::Vector{<:AbstractMatrix{<:Integer}})::Array{Int,3}
     r = length(mats)
+    r ≥ 1 || error("_mats_to_mt: empty list of matrices")
     mt = zeros(Int, r, r, r)
     @inbounds for a in 1:r
-        mt[a, :, :] .= mats[a]
+        A = mats[a]
+        size(A,1) == r && size(A,2) == r || error("_mats_to_mt: mat $a has wrong size $(size(A)) (expected $r×$r)")
+        mt[a, :, :] .= A
     end
     return mt
 end
@@ -438,14 +446,6 @@ end
 
 
 
-function _mats_to_mt(mats::Vector{Matrix{Int}})::Array{Int,3}
-    r = length(mats)
-    mt = zeros(Int, r, r, r)
-    @inbounds for a in 1:r
-        mt[a, :, :] .= mats[a]
-    end
-    return mt
-end
 
 # index convention (matches  Evaluate[...] = IdentityMatrix[rank]):
 # 1: Id
@@ -1069,7 +1069,7 @@ groupname(grp) = try string(grp) catch; "Unknown Group" end
 
 
 #Added: from Iazumi  
-export FusionRingHI, FusionRingTY
+export HI_fusion_ring
 """
     FusionRingHI(tab; names=String[]) -> FusionRing
 
@@ -1081,7 +1081,7 @@ Rank is 2n. Objects are:
 
 
 """
-function FusionRingHI(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
+function HI_fusion_ring(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
     _is_group_table(tab) || throw(ArgumentError("FusionRingHI: tab must be a group multiplication table (identity=1, associative, latin square)."))
     issymmetric(tab) || throw(ArgumentError("FusionRingHI: multiplication table must be symmetric."))
 
@@ -1193,13 +1193,14 @@ end
 
 
 #Added: from izumi
+export TY_fusion_ring
 """
     FusionRingTY(tab; names=String[]) -> FusionRing
 
 Build the Tambara–Yamagami fusion ring for a group with multiplication table `tab`.
 Rank is n+1 (group elements + one extra object).
 """
-function FusionRingTY(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
+function TY_fusion_ring(tab::AbstractMatrix{<:Integer}; names::Vector{String}=String[])
     _is_group_table(tab) || throw(ArgumentError("FusionRingTY: tab must be a group multiplication table (identity=1, associative, latin square)."))
     n = size(tab, 1)
     r = n + 1
@@ -1267,22 +1268,6 @@ end
 
 
 
-"""
-    _mats_to_mt(mats) -> mt
-
-Given mats[a] = N_a (rank×rank), return mt[a,b,c] = (N_a)[b,c].
-"""
-function _mats_to_mt(mats::Vector{<:AbstractMatrix{<:Integer}})::Array{Int,3}
-    r = length(mats)
-    r ≥ 1 || error("_mats_to_mt: empty mats")
-    mt = zeros(Int, r, r, r)
-    @inbounds for a in 1:r
-        A = mats[a]
-        size(A,1) == r && size(A,2) == r || error("_mats_to_mt: mat $a has wrong size $(size(A)) (expected $r×$r)")
-        mt[a, :, :] .= A
-    end
-    return mt
-end
 
 
 #Added: from izumi
@@ -1298,60 +1283,3 @@ end
 # This file provides:
 #   FusionRingHI(tab; names=...)
 #   FusionRingTY(tab; names=...)
-export FusionRingHI, FusionRingTY
-
-
-
-"""
-    _is_group_table(tab) -> Bool
-
-Very explicit check that `tab` is a group multiplication table on {1..n}
-with identity element 1.
-
-Checks:
-- tab is n×n Int
-- entries are in 1..n
-- 1 acts as identity: tab[1,i]=i and tab[i,1]=i
-- each row and column is a permutation of 1..n
-- associativity: tab[ tab[i,j], k ] == tab[ i, tab[j,k] ]
-"""
-function _is_group_table(tab::AbstractMatrix{<:Integer})::Bool
-    n = size(tab, 1)
-    size(tab, 2) == n || return false
-    n ≥ 1 || return false
-
-    # Entries in 1..n
-    @inbounds for i in 1:n, j in 1:n
-        x = tab[i, j]
-        (1 <= x <= n) || return false
-    end
-
-    # Identity is 1
-    @inbounds for i in 1:n
-        tab[1, i] == i || return false
-        tab[i, 1] == i || return false
-    end
-
-    # Latin square: each row/col is a permutation of 1..n
-    seen = falses(n)
-    @inbounds for i in 1:n
-        fill!(seen, false)
-        for j in 1:n
-            seen[tab[i, j]] = true
-        end
-        all(seen) || return false
-
-        fill!(seen, false)
-        for j in 1:n
-            seen[tab[j, i]] = true
-        end
-        all(seen) || return false
-    end
-
-    # Associativity
-    @inbounds for i in 1:n, j in 1:n, k in 1:n
-        tab[tab[i, j], k] == tab[i, tab[j, k]] || return false
-    end
-
-    return true
-end
