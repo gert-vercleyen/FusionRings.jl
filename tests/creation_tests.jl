@@ -491,6 +491,63 @@
         end
     end
 
+    #FusiongRingHI:
+
+    
+    @testset "FusionRingHI" begin
+        z2_tab = [
+            1 2
+            2 1
+        ]
+
+        z3_tab = [
+            1 2 3
+            2 3 1
+            3 1 2
+        ]
+
+        nonsymmetric_group_tab = z3_tab  # valid group table, but not symmetric as a matrix
+        bad_tab = [
+            1 1
+            2 2
+        ]
+
+        @testset "basic construction on symmetric group table" begin
+            r = FusionRingHI(z2_tab)
+
+            check_equal(rank(r), 4,
+                "FusionRingHI on the Z2 Cayley table did not produce rank 4")
+            check_equal(size(multiplication_table(r)), (4,4,4),
+                "FusionRingHI(Z2) multiplication table had wrong size")
+            check_equal(labels(r), ["1", "2", "ρ_1", "ρ_2"],
+                "FusionRingHI(Z2) labels were incorrect")
+        end
+
+        @testset "basic fusion behaviour on Z2 input" begin
+            r = FusionRingHI(z2_tab)
+
+            # First two are group sector, last two are rho sector
+            check_equal(fusion_product(r, 1, 1), Dict(1 => 1),
+                "vacuum × vacuum was not vacuum in FusionRingHI(Z2)")
+            check_equal(fusion_product(r, 1, 3), Dict(3 => 1),
+                "vacuum × ρ_1 was not ρ_1 in FusionRingHI(Z2)")
+        end
+
+        @testset "rejects invalid or unsupported tables" begin
+            check_throws(
+                () -> FusionRingHI(bad_tab),
+                "FusionRingHI accepted a table that was not a valid group table"
+            )
+
+            check_throws(
+                () -> FusionRingHI(nonsymmetric_group_tab),
+                "FusionRingHI accepted a valid group table that was not symmetric as a matrix"
+            )
+        end
+    end
+
+end
+
 
 
 
