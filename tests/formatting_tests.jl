@@ -184,6 +184,40 @@
         )
     end
 
+    #Product_String
+
+     @testset "product_string" begin
+        z2 = zn_fusion_ring(2)
+        z3 = zn_fusion_ring(3)
+
+        check_equal(
+            product_string(z2, 1, 1),
+            "0 × 0 = 0",
+            "product_string(Z2, 1, 1) was not \"0 × 0 = 0\""
+        )
+
+        check_equal(
+            product_string(z2, 2, 2),
+            "1 × 1 = 0",
+            "product_string(Z2, 2, 2) was not \"1 × 1 = 0\""
+        )
+
+        check_equal(
+            product_string(z3, 2, 2),
+            "1 × 1 = 2",
+            "product_string(Z3, 2, 2) was not \"1 × 1 = 2\""
+        )
+
+        check_equal(
+            product_string(z3, 2, 3),
+            "1 × 2 = 0",
+            "product_string(Z3, 2, 3) was not \"1 × 2 = 0\""
+        )
+    end
+
+
+
+
 
 
 
