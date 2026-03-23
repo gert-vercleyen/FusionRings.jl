@@ -17,7 +17,7 @@ export qqb_dict, fusion_ring_list, frl, fusion_ring_dict, frd, from_anyonwiki_co
 """Internal helper: ensure ring lookup dictionary has been initialized."""
 function _ensure_frd_initialized()
     isdefined(@__MODULE__, :frd) || error("FusionRings data not initialized (frd is undefined).")
-    frd isa Dict || error("FusionRings data not initialized (frd is not a Dict).")
+    frd isa Dict || error("frd is defined but not a Dict).")
     nothing
 end
 
