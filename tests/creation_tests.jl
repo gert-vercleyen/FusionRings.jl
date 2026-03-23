@@ -147,3 +147,65 @@
         )
     end
 
+    #Zn fusion rings:
+
+      @testset "zn_fusion_ring" begin
+        z1 = zn_fusion_ring(1)
+        z2 = zn_fusion_ring(2)
+        z3 = zn_fusion_ring(3)
+        z4 = zn_fusion_ring(4)
+
+        @testset "basic ranks" begin
+            check_equal(rank(z1), 1, "rank(zn_fusion_ring(1)) was not 1")
+            check_equal(rank(z2), 2, "rank(zn_fusion_ring(2)) was not 2")
+            check_equal(rank(z3), 3, "rank(zn_fusion_ring(3)) was not 3")
+            check_equal(rank(z4), 4, "rank(zn_fusion_ring(4)) was not 4")
+        end
+
+        @testset "labels" begin
+            check_equal(labels(z1), ["0"], "labels(zn_fusion_ring(1)) were incorrect")
+            check_equal(labels(z2), ["0", "1"], "labels(zn_fusion_ring(2)) were incorrect")
+            check_equal(labels(z3), ["0", "1", "2"], "labels(zn_fusion_ring(3)) were incorrect")
+            check_equal(labels(z4), ["0", "1", "2", "3"], "labels(zn_fusion_ring(4)) were incorrect")
+        end
+
+        @testset "table sizes" begin
+            check_equal(size(multiplication_table(z1)), (1,1,1),
+                "multiplication table for zn_fusion_ring(1) had wrong size")
+            check_equal(size(multiplication_table(z2)), (2,2,2),
+                "multiplication table for zn_fusion_ring(2) had wrong size")
+            check_equal(size(multiplication_table(z3)), (3,3,3),
+                "multiplication table for zn_fusion_ring(3) had wrong size")
+            check_equal(size(multiplication_table(z4)), (4,4,4),
+                "multiplication table for zn_fusion_ring(4) had wrong size")
+        end
+
+        @testset "basic properties" begin
+            check_true(is_commutative(z1), "zn_fusion_ring(1) was not commutative")
+            check_true(is_commutative(z2), "zn_fusion_ring(2) was not commutative")
+            check_true(is_commutative(z3), "zn_fusion_ring(3) was not commutative")
+            check_true(is_commutative(z4), "zn_fusion_ring(4) was not commutative")
+
+            check_true(is_group_ring(z1), "zn_fusion_ring(1) was not detected as a group ring")
+            check_true(is_group_ring(z2), "zn_fusion_ring(2) was not detected as a group ring")
+            check_true(is_group_ring(z3), "zn_fusion_ring(3) was not detected as a group ring")
+            check_true(is_group_ring(z4), "zn_fusion_ring(4) was not detected as a group ring")
+        end
+
+        @testset "selected products" begin
+            # In Z3: indices 1,2,3 correspond to 0,1,2 mod 3
+            check_equal(fusion_product(z3, 1, 1), Dict(1 => 1),
+                "vacuum × vacuum was not vacuum in zn_fusion_ring(3)")
+            check_equal(fusion_product(z3, 2, 2), Dict(3 => 1),
+                "index 2 × index 2 in zn_fusion_ring(3) was not index 3")
+            check_equal(fusion_product(z3, 2, 3), Dict(1 => 1),
+                "index 2 × index 3 in zn_fusion_ring(3) was not vacuum")
+
+            # In Z4: 2+2 = 0 mod 4? careful with indexing:
+            # indices 1,2,3,4 ↔ 0,1,2,3
+            # so 3×3 ↔ 2+2 = 0, i.e. vacuum
+            check_equal(fusion_product(z4, 3, 3), Dict(1 => 1),
+                "index 3 × index 3 in zn_fusion_ring(4) was not vacuum")
+        end
+    end
+
