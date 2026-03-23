@@ -1,5 +1,5 @@
 @testset "Formatting and printing" begin
-
+#testing functions in Formatting and Printing.jl 
     #Integer Transformation helpers
 
      @testset "transform_integer / bold_integer / subscript_integer / superscript_integer" begin
@@ -288,6 +288,34 @@
             "show(z2) did not end with \")\""
         )
     end
+
+        # Constructor defaults interact correctly with formatting helpers
+
+    @testset "default labels use bold_integer" begin
+        mt = zeros(Int, 2, 2, 2)
+        mt[1,1,1] = 1
+        mt[1,2,2] = 1
+        mt[2,1,2] = 1
+        mt[2,2,1] = 1
+
+        r = fusion_ring(mt)
+
+        check_equal(
+            labels(r)[1],
+            bold_integer(1),
+            "fusion_ring(mt) did not use bold_integer(1) as the first default label"
+        )
+
+        check_equal(
+            labels(r)[2],
+            bold_integer(2),
+            "fusion_ring(mt) did not use bold_integer(2) as the second default label"
+        )
+    end
+
+end
+
+
 
 
 
