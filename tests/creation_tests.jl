@@ -395,6 +395,38 @@
         end
     end
 
+    #internal group-table helpers:
+
+        @testset "_is_group_table / _inverse_vector" begin
+        z2_tab = [
+            1 2
+            2 1
+        ]
+
+        z3_tab = [
+            1 2 3
+            2 3 1
+            3 1 2
+        ]
+
+        bad_tab = [
+            1 2
+            1 2
+        ]
+
+        check_true(FusionRings._is_group_table(z2_tab),
+            "_is_group_table did not recognize the Z2 Cayley table")
+        check_true(FusionRings._is_group_table(z3_tab),
+            "_is_group_table did not recognize the Z3 Cayley table")
+        check_false(FusionRings._is_group_table(bad_tab),
+            "_is_group_table incorrectly accepted an invalid table")
+
+        check_equal(FusionRings._inverse_vector(z2_tab), [1,2],
+            "_inverse_vector(Z2 table) was not [1,2]")
+        check_equal(FusionRings._inverse_vector(z3_tab), [1,3,2],
+            "_inverse_vector(Z3 table) was not [1,3,2]")
+    end
+
 
 
 
