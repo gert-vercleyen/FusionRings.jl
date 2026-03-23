@@ -209,3 +209,55 @@
         end
     end
 
+    #su2k_fusion_ring:
+
+    @testset "su2k_fusion_ring" begin
+        r1 = su2k_fusion_ring(1)
+        r2 = su2k_fusion_ring(2)
+        r3 = su2k_fusion_ring(3)
+
+        @testset "basic ranks and sizes" begin
+            check_equal(rank(r1), 2, "rank(su2k_fusion_ring(1)) was not 2")
+            check_equal(rank(r2), 3, "rank(su2k_fusion_ring(2)) was not 3")
+            check_equal(rank(r3), 4, "rank(su2k_fusion_ring(3)) was not 4")
+
+            check_equal(size(multiplication_table(r1)), (2,2,2),
+                "multiplication table for su2k_fusion_ring(1) had wrong size")
+            check_equal(size(multiplication_table(r2)), (3,3,3),
+                "multiplication table for su2k_fusion_ring(2) had wrong size")
+            check_equal(size(multiplication_table(r3)), (4,4,4),
+                "multiplication table for su2k_fusion_ring(3) had wrong size")
+        end
+
+        @testset "labels" begin
+            check_equal(labels(r1), ["0", "1"],
+                "labels(su2k_fusion_ring(1)) were incorrect")
+            check_equal(labels(r2), ["0", "1", "2"],
+                "labels(su2k_fusion_ring(2)) were incorrect")
+            check_equal(labels(r3), ["0", "1", "2", "3"],
+                "labels(su2k_fusion_ring(3)) were incorrect")
+        end
+
+        @testset "basic properties" begin
+            check_true(is_commutative(r1), "su2k_fusion_ring(1) was not commutative")
+            check_true(is_commutative(r2), "su2k_fusion_ring(2) was not commutative")
+            check_true(is_commutative(r3), "su2k_fusion_ring(3) was not commutative")
+        end
+
+        @testset "selected low-k products" begin
+            # SU(2)_1 behaves like Z2
+            check_equal(fusion_product(r1, 2, 2), Dict(1 => 1),
+                "nontrivial simple squared in su2k_fusion_ring(1) was not vacuum")
+
+            # SU(2)_2 has labels 0,1,2.
+            # Fusion rule: 1⊗1 = 0 + 2  (indices 2⊗2 = 1 + 3)
+            check_equal(fusion_product(r2, 2, 2), Dict(1 => 1, 3 => 1),
+                "index 2 × index 2 in su2k_fusion_ring(2) was not vacuum + top object")
+        end
+    end
+
+    
+
+
+
+
