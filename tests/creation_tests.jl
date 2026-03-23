@@ -291,6 +291,51 @@
     end
 
 
+    #son2_fusion_ring:
+
+    
+    @testset "son2_fusion_ring / metaplectic_fusion_ring" begin
+        odd = son2_fusion_ring(5)
+        even2 = son2_fusion_ring(6)
+        even4 = son2_fusion_ring(8)
+        meta = metaplectic_fusion_ring(5)
+
+        @testset "basic sizes" begin
+            check_true(rank(odd) > 0, "rank(son2_fusion_ring(5)) was not positive")
+            check_true(rank(even2) > 0, "rank(son2_fusion_ring(6)) was not positive")
+            check_true(rank(even4) > 0, "rank(son2_fusion_ring(8)) was not positive")
+
+            check_equal(size(multiplication_table(odd)), (rank(odd), rank(odd), rank(odd)),
+                "multiplication table size for son2_fusion_ring(5) did not match its rank")
+            check_equal(size(multiplication_table(even2)), (rank(even2), rank(even2), rank(even2)),
+                "multiplication table size for son2_fusion_ring(6) did not match its rank")
+            check_equal(size(multiplication_table(even4)), (rank(even4), rank(even4), rank(even4)),
+                "multiplication table size for son2_fusion_ring(8) did not match its rank")
+        end
+
+        @testset "basic properties" begin
+            check_true(is_commutative(odd), "son2_fusion_ring(5) was not commutative")
+            check_true(is_commutative(even2), "son2_fusion_ring(6) was not commutative")
+            check_true(is_commutative(even4), "son2_fusion_ring(8) was not commutative")
+        end
+
+        @testset "metaplectic alias" begin
+            check_equal(rank(meta), rank(odd),
+                "metaplectic_fusion_ring(5) did not have the same rank as son2_fusion_ring(5)")
+            check_equal(multiplication_table(meta), multiplication_table(odd),
+                "metaplectic_fusion_ring(5) did not match son2_fusion_ring(5)")
+        end
+
+        @testset "invalid input" begin
+            check_throws(
+                () -> son2_fusion_ring(3),
+                "son2_fusion_ring accepted m=3 even though it should require m ≥ 4"
+            )
+        end
+    end
+
+    
+
 
 
 
