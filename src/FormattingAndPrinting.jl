@@ -39,7 +39,7 @@ function Base.show( io::IO, ring::FusionRing )
         p( "FR(" * string(ring.anyonwiki_code)[2:end-1] * ")" )
     else
         props = map( string, comap( [ rank, multiplicity, nnsd ], ring ) )
-        p( "FR(" * join( props, ", "  ) * ")" )
+        p( "FR(" * join( props, ", "  ) * ", ? )" )
     end
 end
 
