@@ -124,5 +124,68 @@
         )
     end
 
+    #geometric array helpers:
+
+     @testset "is_geometric_array" begin
+        check_true(
+            is_geometric_array(Int[]),
+            "is_geometric_array(Int[]) should return true"
+        )
+
+        check_true(
+            is_geometric_array([1]),
+            "is_geometric_array([1]) should return true"
+        )
+
+        check_true(
+            is_geometric_array([1, 2, 4, 8]),
+            "is_geometric_array([1,2,4,8]) should return true"
+        )
+
+        check_true(
+            is_geometric_array([1, -1, 1, -1]),
+            "is_geometric_array([1,-1,1,-1]) should return true"
+        )
+
+        check_false(
+            is_geometric_array([1, 2, 5, 10]),
+            "is_geometric_array([1,2,5,10]) should return false"
+        )
+
+        check_false(
+            is_geometric_array([2]),
+            "is_geometric_array([2]) should return false because the one-term case only accepts [1]"
+        )
+    end
+
+    @testset "factor_squares" begin
+        check_equal(
+            factor_squares(12),
+            (2, 3),
+            "factor_squares(12) was not (2,3)"
+        )
+
+        check_equal(
+            factor_squares(18),
+            (3, 2),
+            "factor_squares(18) was not (3,2)"
+        )
+
+        check_equal(
+            factor_squares(16),
+            (4, 1),
+            "factor_squares(16) was not (4,1)"
+        )
+
+        check_equal(
+            factor_squares(7),
+            (1, 7),
+            "factor_squares(7) was not (1,7)"
+        )
+    end
+
+
+
+
 
 
