@@ -114,3 +114,36 @@
         )
     end
 
+      @testset "fusion_ring: rejects bad inverse condition" begin
+        mt = make_z2_mt()
+        # make both 1 and 2 appear as "duals" of 2 by forcing extra contribution to c=1
+        mt[2,2,2] = 1
+
+        check_throws(
+            () -> fusion_ring(mt; labels = ["0", "1"]),
+            "fusion_ring accepted a multiplication table violating the unique inverse condition"
+        )
+    end
+
+    @testset "fusion_ring: rejects non-associative tables" begin
+        mt = zeros(Int, 2, 2, 2)
+        mt[1,1,1] = 1
+        mt[1,2,2] = 1
+        mt[2,1,2] = 1
+        mt[2,2,2] = 1   # x⊗x = x, this breaks inverse condition / associativity expectations
+
+        check_throws(
+            () -> fusion_ring(mt; labels = ["0", "1"]),
+            "fusion_ring accepted a non-fusion multiplication table that should fail validation"
+        )
+    end
+
+    @testset "fusion_ring: rejects incorrect label length" begin
+        mt = make_z2_mt()
+
+        check_throws(
+            () -> fusion_ring(mt; labels = ["0"]),
+            "fusion_ring accepted labels whose length did not equal the rank"
+        )
+    end
+
