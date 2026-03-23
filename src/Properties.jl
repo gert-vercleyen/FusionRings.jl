@@ -59,14 +59,23 @@ function _internal_multiplication(fr::FusionRing, S::Vector{Int})::Bool
     true
 end
 
-
-
-
 export labels
 
 function labels(r::FusionRing)::Array{String,1}
   return r.labels
 end
+
+export is_commutative
+
+function is_commutative(fr::FusionRing)::Bool
+    N = multiplication_table(fr)
+    r = rank(fr)
+    for a in 1:r, b in 1:r, c in 1:r
+        N[a,b,c] == N[b,a,c] || return false
+    end
+    true
+end
+
 
 export conjugation_matrix
 
