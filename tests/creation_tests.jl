@@ -81,4 +81,36 @@
         )
     end
 
-    
+     @testset "fusion_ring: rejects non-integer structure constants" begin
+        mt = Array{Float64}(undef, 2, 2, 2)
+        fill!(mt, 0.0)
+        mt[1,1,1] = 1.0
+        mt[1,2,2] = 1.0
+        mt[2,1,2] = 1.0
+        mt[2,2,1] = 1.0
+
+        check_throws(
+            () -> fusion_ring(mt; labels = ["0", "1"]),
+            "fusion_ring accepted a multiplication table with non-integer structure constants"
+        )
+    end
+
+    @testset "fusion_ring: rejects non-cubic tensors" begin
+        mt = zeros(Int, 2, 2, 3)
+
+        check_throws(
+            () -> fusion_ring(mt),
+            "fusion_ring accepted a multiplication table whose tensor dimensions were not all equal"
+        )
+    end
+
+    @testset "fusion_ring: rejects bad unit" begin
+        mt = make_z2_mt()
+        mt[1,2,2] = 0
+
+        check_throws(
+            () -> fusion_ring(mt; labels = ["0", "1"]),
+            "fusion_ring accepted a multiplication table whose first basis element was not a unit"
+        )
+    end
+
