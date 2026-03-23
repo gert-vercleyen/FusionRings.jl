@@ -256,7 +256,42 @@
         end
     end
 
+    #psu2k_fusion_ring:
+
     
+    @testset "psu2k_fusion_ring" begin
+        r2 = psu2k_fusion_ring(2)
+        r4 = psu2k_fusion_ring(4)
+        r6 = psu2k_fusion_ring(6)
+
+        @testset "basic ranks and sizes" begin
+            check_equal(rank(r2), 2, "rank(psu2k_fusion_ring(2)) was not 2")
+            check_equal(rank(r4), 3, "rank(psu2k_fusion_ring(4)) was not 3")
+            check_equal(rank(r6), 4, "rank(psu2k_fusion_ring(6)) was not 4")
+
+            check_equal(size(multiplication_table(r2)), (2,2,2),
+                "multiplication table for psu2k_fusion_ring(2) had wrong size")
+            check_equal(size(multiplication_table(r4)), (3,3,3),
+                "multiplication table for psu2k_fusion_ring(4) had wrong size")
+            check_equal(size(multiplication_table(r6)), (4,4,4),
+                "multiplication table for psu2k_fusion_ring(6) had wrong size")
+        end
+
+        @testset "basic properties" begin
+            check_true(is_commutative(r2), "psu2k_fusion_ring(2) was not commutative")
+            check_true(is_commutative(r4), "psu2k_fusion_ring(4) was not commutative")
+            check_true(is_commutative(r6), "psu2k_fusion_ring(6) was not commutative")
+        end
+
+        @testset "selected product" begin
+            # PSU(2)_2 should also be rank 2 and behave like Z2
+            check_equal(fusion_product(r2, 2, 2), Dict(1 => 1),
+                "nontrivial simple squared in psu2k_fusion_ring(2) was not vacuum")
+        end
+    end
+
+
+
 
 
 
