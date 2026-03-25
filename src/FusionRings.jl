@@ -6,11 +6,12 @@ import Oscar: multiplication_table, is_commutative, rank, multiplicity
 import Base.names
 
 include("GeneralFunctions.jl")
+include("Structs.jl")
+include("FormattingAndPrinting.jl")
 include("Creation.jl")
 include("Properties.jl")
 include("Operations.jl")
 include("ImportData.jl")
-include("FormattingAndPrinting.jl")
 
 export qqb_dict, fusion_ring_list, frl, fusion_ring_dict, frd, from_anyonwiki_code, fawc
 
