@@ -180,6 +180,7 @@ function conjugate_element(fr::FusionRing, a)
 end
 
 export anyonwiki_code
+
 function anyonwiki_code(r::FusionRing)::Array{Int,1}
   return r.anyonwiki_code
 end
