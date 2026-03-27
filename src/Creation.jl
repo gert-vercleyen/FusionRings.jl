@@ -1,7 +1,3 @@
-
-
-
-
 export psu2k_fusion_ring, su2k_fusion_ring, son2_fusion_ring, metaplectic_fusion_ring,
        fusion_ring_from_group, zn_fusion_ring, group_rep_fusion_ring, hi_fusion_ring,
        ty_fusion_ring
@@ -15,7 +11,11 @@ function psu2k_fusion_ring(k::Int)::FusionRing
     rk = div(k, 2) + 1
     mt = fill(0, rk, rk, rk)
     for a in 0:2:k, b in 0:2:k, c in 0:2:k
-        c in range_psu2k(a, b, k) && (mt[div(a, 2)+1, div(b, 2)+1, div(c, 2)+1] = 1)
+        if c ∈ range_psu2k(a, b, k) 
+            mt[div(a, 2)+1, div(b, 2)+1, div(c, 2)+1] = 1
+        else
+            continue
+        end
     end
 
     elnames = 
@@ -39,7 +39,11 @@ function su2k_fusion_ring(k::Int)::FusionRing
     rk = k + 1
     mt = fill(0, rk, rk, rk)
     for a in 0:k, b in 0:k, c in 0:k
-        c in range_psu2k(a, b, k) && (mt[a+1, b+1, c+1] = 1)
+        if c ∈ range_psu2k(a, b, k) 
+            mt[a+1, b+1, c+1] = 1
+        else 
+            continue
+        end
     end
     fusion_ring(
         mt, 
