@@ -48,68 +48,68 @@ export print_multiplication_table
 #TODO: 
 # * no nlonger use names - should be labels
 # * labels should be printed as bold integers
-"""
-Pretty prints the multiplication table as strings (no mutation).
-"""
-function print_multiplication_table(fr::FusionRing; include_zeros::Bool=false)
-    N = multiplication_table(fr)
-    names = labels(fr)
-    r = length(names)
-    head = "× │ " * join(names, " │ ")
-    sep  = "──┼" * "───┼"^(r-1) * "──"
-    println(head); println(sep)
-    for i in 1:r
-        rowcells = String[]
-        for j in 1:r
-            d = fusion_product(fr, i, j)
-            if include_zeros
-                parts = String[]
-                for c in 1:r
-                    m = get(d,c,0)
-                    if m==0; push!(parts, "0 "*names[c])
-                    elseif m==1; push!(parts, names[c])
-                    else; push!(parts, string(m," ",names[c]))
-                    end
-                end
-                push!(rowcells, join(parts, " + "))
-            else
-                isempty(d) && push!(rowcells, "0") && continue
-                push!(rowcells,
-                    join([ m==1 ? names[c] : string(m," ",names[c]) for (c,m) in d ], " + "))
-            end
-        end
-        println(names[i], " │ ", join(rowcells, " │ "))
-    end
-    nothing
-end
+# """
+# Pretty prints the multiplication table as strings (no mutation).
+# """
+# function print_multiplication_table(fr::FusionRing; include_zeros::Bool=false)
+#     N = multiplication_table(fr)
+#     names = labels(fr)
+#     r = length(names)
+#     head = "× │ " * join(names, " │ ")
+#     sep  = "──┼" * "───┼"^(r-1) * "──"
+#     println(head); println(sep)
+#     for i in 1:r
+#         rowcells = String[]
+#         for j in 1:r
+#             d = fusion_product(fr, i, j)
+#             if include_zeros
+#                 parts = String[]
+#                 for c in 1:r
+#                     m = get(d,c,0)
+#                     if m==0; push!(parts, "0 "*names[c])
+#                     elseif m==1; push!(parts, names[c])
+#                     else; push!(parts, string(m," ",names[c]))
+#                     end
+#                 end
+#                 push!(rowcells, join(parts, " + "))
+#             else
+#                 isempty(d) && push!(rowcells, "0") && continue
+#                 push!(rowcells,
+#                     join([ m==1 ? names[c] : string(m," ",names[c]) for (c,m) in d ], " + "))
+#             end
+#         end
+#         println(names[i], " │ ", join(rowcells, " │ "))
+#     end
+#     nothing
+# end
 
 pmt = print_multiplication_table
 
 
-#function print_multiplication_table(r::FusionRing)
-#  rk = rank(r)
-#  mt = multiplication_table(r)
-#
-#  tab = fill( "", rk, rk )
-#  for i in 1:rk, j in 1:rk
-#    tab[i,j] = row_to_string(r,mt[i,j,:])
-#  end
-#  tab
-#end
-#
-#export row_to_string
-#
-#function row_to_string(r::FusionRing, row)::String
-#  n             = length(row)
-#  el_names      = labels(r)
-#  non_zero_ind  = findall(i -> row[i] > 0, 1:n)
-#  to_string(i)  = element_to_string(row[i], el_names[i])
-#
-#  join(
-#    map(to_string, non_zero_ind),
-#    " ⊕ "
-#  )
-#end
+function print_multiplication_table(r::FusionRing)
+    rk = rank(r)
+    mt = multiplication_table(r)
+
+    tab = fill( "", rk, rk )
+    for i in 1:rk, j in 1:rk
+    tab[i,j] = row_to_string(r,mt[i,j,:])
+    end
+    tab
+end
+
+export row_to_string
+
+function row_to_string(r::FusionRing, row)::String
+ n             = length(row)
+ el_names      = labels(r)
+ non_zero_ind  = findall(i -> row[i] > 0, 1:n)
+ to_string(i)  = element_to_string(row[i], el_names[i])
+
+ join(
+   map(to_string, non_zero_ind),
+   " ⊕ "
+ )
+end
 
 function element_to_string(mult,elem)::String
   if mult == 0 
