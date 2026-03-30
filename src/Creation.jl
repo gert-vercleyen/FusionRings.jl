@@ -10,6 +10,7 @@ range_psu2k(i, j, k) = abs(i - j):2:min(i + j, 2k - i - j)
 function psu2k_fusion_ring(k::Int)::FusionRing
     rk = div(k, 2) + 1
     mt = fill(0, rk, rk, rk)
+
     for a in 0:2:k, b in 0:2:k, c in 0:2:k
         if c ∈ range_psu2k(a, b, k) 
             mt[div(a, 2)+1, div(b, 2)+1, div(c, 2)+1] = 1
@@ -126,7 +127,7 @@ end
 # TODO: implement 
 group_rep_fusion_ring(grp) = throw(ErrorException("group_rep_fusion_ring needs character tables (TODO)"))
 # TODO: implement 
-hi_fusion_ring(grp)       = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
+hi_fusion_ring(grp)        = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
 
 
 
@@ -168,8 +169,8 @@ function _mats_to_mt(mats::Vector{<:AbstractMatrix{<:Integer}})::Array{Int,3}
 end
 
 function _son2_rules_odd(m::Integer)::Array{Int,3}
-    isodd(m) || throw(ArgumentError("_son2_rules_odd expects odd m, got m=$m"))
-    m ≥ 5    || throw(ArgumentError("_son2_rules_odd expects m≥5 (odd), got m=$m"))
+    isodd(m) || throw(ArgumentError("_son2_rules_odd expects odd N, got N=$m"))
+    m ≥ 5    || throw(ArgumentError("_son2_rules_odd expects N≥5 (odd), got N=$m"))
 
     r    = (m - 1) ÷ 2
     rank = (m + 7) ÷ 2 
@@ -178,10 +179,13 @@ function _son2_rules_odd(m::Integer)::Array{Int,3}
     ar(i) = _e(i, rank)
 
     # mat1 = IdentityMatrix[rank]
-    mat1 = Matrix{Int}(I, rank, rank)
+    mat1 = Matrix{Int}(0, rank, rank)
+    for i in 1:r 
+        mat1[i,i] = 1
+    end
 
     # matZ = Table[ Which[...], {i,rank} ]
-    matZ = zeros(Int, rank, rank)
+    matZ = zeros(Int, rank, rank) 
     @inbounds for i in 1:rank
         v = if i == 1
             ar(2)
@@ -886,18 +890,15 @@ Return fusion ring SO(N)_2 (metaplectic) .
 #- even `N ≡ 0 (mod 4)`: uses `_son2_rules_div4(N÷2)`
 #- even `N ≡ 2 (mod 4)`: uses `_son2_rules_div2(N÷2)`
 
-function son2_fusion_ring(m::Int)::FusionRing
-    m ≥ 4 || throw(ArgumentError("son2_fusion_ring(m): requires integer m ≥ 4, got m=$m"))
+function son2_fusion_ring(N::Int)::FusionRing
+    N ≥ 4 || throw(ArgumentError("son2_fusion_ring(N): requires integer N ≥ 4, got N=$N"))
 
-    mt::Array{Int,3}
-    labels::Vector{String}
-
-    if isodd(m)
-        mt = _son2_rules_odd(m)
-        labels = _son2_labels_odd(m)
+    if isodd(N)
+        mt     = _son2_rules_odd(N)
+        labels = _son2_labels_odd(N)
     else
-        p = m ÷ 2
-        if m % 4 == 0
+        p = N ÷ 2
+        if N % 4 == 0
             mt = _son2_rules_div4(p)
         else
             mt = _son2_rules_div2(p)
@@ -910,7 +911,7 @@ function son2_fusion_ring(m::Int)::FusionRing
 
     R = fusion_ring(
         mt;
-        names  = ["SO($m)_2", "Metaplectic($m)"],
+        names  = ["SO($N)_2", "Metaplectic($N)"],
         labels = labels,
     )
 
