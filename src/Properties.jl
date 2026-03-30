@@ -467,8 +467,36 @@ function is_nilpotent(r::FusionRing)::Bool
     return length(last_set) == 1 && rank(last_ring) == 1
 end
 
-function adjoint_irreps(r::FusionRing)::Array{Array{Int,1},1}
-    error("adjoint_irreps not implemented yet")
+export adjoint_irreps
+
+"""
+    action_left(fr, sub, elements) -> Vector{Int}
+
+Return the union of all fusion outcomes `a ⊗ x` with `a ∈ sub` and `x ∈ elements`.
+The result is sorted and duplicate-free.
+"""
+function action_left(fr::FusionRing, sub::Vector{Int}, elements::Vector{Int})::Vector{Int}
+    out = Int[]
+    @inbounds for a in sub, x in elements
+        append!(out, fusion_outcomes(fr, a, x))
+    end
+    sort!(unique!(out))
+    return out
+end
+
+"""
+    action_right(fr, sub, elements) -> Vector{Int}
+
+Return the union of all fusion outcomes `x ⊗ a` with `a ∈ sub` and `x ∈ elements`.
+The result is sorted and duplicate-free.
+"""
+function action_right(fr::FusionRing, sub::Vector{Int}, elements::Vector{Int})::Vector{Int}
+    out = Int[]
+    @inbounds for a in sub, x in elements
+        append!(out, fusion_outcomes(fr, x, a))
+    end
+    sort!(unique!(out))
+    return out
 end
 
 
