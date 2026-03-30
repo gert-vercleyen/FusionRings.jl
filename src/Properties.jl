@@ -499,6 +499,19 @@ function action_right(fr::FusionRing, sub::Vector{Int}, elements::Vector{Int})::
     return out
 end
 
+"""
+    combined_action(fr, sub, elements) -> Vector{Int}
+
+Return the union of the left and right actions of `sub` on `elements`.
+The result is sorted and duplicate-free.
+"""
+function combined_action(fr::FusionRing, sub::Vector{Int}, elements::Vector{Int})::Vector{Int}
+    out = union(action_left(fr, sub, elements), action_right(fr, sub, elements))
+    sort!(out)
+    return out
+end
+
+
 
 #Added: from updates/commutator
 """
