@@ -83,7 +83,6 @@ export print_multiplication_table
 #     nothing
 # end
 
-pmt = print_multiplication_table
 
 
 function print_multiplication_table(r::FusionRing)
@@ -97,28 +96,30 @@ function print_multiplication_table(r::FusionRing)
     tab
 end
 
+pmt = print_multiplication_table
+
 export row_to_string
 
 function row_to_string(r::FusionRing, row)::String
- n             = length(row)
- el_names      = labels(r)
- non_zero_ind  = findall(i -> row[i] > 0, 1:n)
- to_string(i)  = element_to_string(row[i], el_names[i])
+    n             = length(row)
+    el_names      = labels(r)
+    non_zero_ind  = findall(i -> row[i] > 0, 1:n)
+    to_string(i)  = element_to_string(row[i], el_names[i])
 
- join(
-   map(to_string, non_zero_ind),
-   " ⊕ "
- )
+    join(
+    map(to_string, non_zero_ind),
+    " ⊕ "
+    )
 end
 
 function element_to_string(mult,elem)::String
-  if mult == 0 
-    return ""
-  elseif mult == 1
-    return elem
-  else 
-    return string(mult) * " " * elem 
-  end
+    if mult == 0 
+        return ""
+    elseif mult == 1
+        return elem
+    else 
+        return string(mult) * " " * elem 
+    end
 end
 
 "Pretty one-liner: `a × b = ...` using printed names; `a,b` are indices."
