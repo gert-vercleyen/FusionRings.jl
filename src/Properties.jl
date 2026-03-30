@@ -511,6 +511,44 @@ function combined_action(fr::FusionRing, sub::Vector{Int}, elements::Vector{Int}
     return out
 end
 
+"""
+    fixed_point_combined_action(fr, sub, seed) -> Vector{Int}
+
+Starting from `seed`, repeatedly apply the combined left/right action of `sub`
+until a fixed point is reached.
+"""
+function fixed_point_combined_action(fr::FusionRing, sub::Vector{Int}, seed::Vector{Int})::Vector{Int}
+    current = sort(unique(seed))
+    while true
+        nxt = combined_action(fr, sub, current)
+        nxt == current && return current
+        current = nxt
+    end
+end
+
+"""
+    adjoint_irreps(fr::FusionRing) -> Vector{Vector{Int}}
+
+Return the partition of the simples of `fr` into orbits under the combined
+left and right action of the adjoint subring.
+"""
+function adjoint_irreps(fr::FusionRing)::Vector{Vector{Int}}
+    subEl, _ = adjoint_fusion_ring(fr)
+
+    parts = Vector{Vector{Int}}()
+    seen = Set{Tuple{Vararg{Int}}}()
+
+    for e in 1:rank(fr)
+        orb = fixed_point_combined_action(fr, subEl, [e])
+        key = Tuple(orb)
+        if !(key in seen)
+            push!(parts, orb)
+            push!(seen, key)
+        end
+    end
+
+    return parts
+end
 
 
 #Added: from updates/commutator
