@@ -195,7 +195,7 @@ end
 #   tab[i,j] = k  iff  els[i] * els[j] = els[k]
 # and identity is moved to index 1.
 #TODO: I am sure this exists already in our code somewhere so I will retake a look - this is temporary implementation to get things working for now, but it is not very efficient and does not do any error handling.
-function _group_table(grp)
+function group_table(grp)
     #  want a finite group here.
     is_finite(grp) || throw(ArgumentError("_group_table: group must be finite"))
 
@@ -243,10 +243,12 @@ function fusion_ring_from_group(grp)::FusionRing
 end
 
 
-# TODO: implement 
-hi_fusion_ring(grp)        = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
 
-
+function hi_fusion_ring(grp; names::Vector{String}=String[])::FusionRing
+    tab, _ = _group_table(grp)
+    default_names = isempty(names) ? ["HI(" * groupname(grp) * ")"] : names
+    return HI_fusion_ring(tab; names=default_names)
+end
 
 
 # TODO 
