@@ -99,8 +99,92 @@ end
 
 
 
-# TODO: implement 
-group_rep_fusion_ring(grp) = throw(ErrorException("group_rep_fusion_ring needs character tables (TODO)"))
+
+"""
+    group_rep_fusion_ring_from_characters(C; names=String[], labels=String[]) -> FusionRing
+
+Build  representation fusion ring from  irreducible character table `C`.
+
+- `C`  square
+- columns  irreducible characters
+- rows  conjugacy classes
+- column 1 is  trivial character, so basis element 1 is  tensor unit
+
+If
+    χ_i χ_j = ∑_k N[i,j,k] χ_k,
+then  coefficient vector  obtained by expanding  pointwise product
+of columns `C[:,i] .* C[:,j]` in  irreducible-character basis:
+    coeffs = inv(C) * (C[:,i] .* C[:,j])
+"""
+function group_rep_fusion_ring_from_characters(
+    C::AbstractMatrix;
+    names::Vector{String}=String[],
+    labels::Vector{String}=String[]
+)::FusionRing
+    # number of irreducible characters
+    n = size(C, 2)
+
+    # character table must be square:
+    # number of irreducibles = number of conjugacy classes
+    size(C, 1) == n || throw(ArgumentError(
+        "group_rep_fusion_ring_from_characters: character table must be square, got size $(size(C))"
+    ))
+
+    # change-of-basis matrix from class-function values back to
+    # coefficients in the irreducible-character basis
+    Cinv = inv(C)
+
+    # multiplication tensor:
+    # mt[i,j,k] = multiplicity of irreducible k in irreducible i ⊗ irreducible j
+    mt = zeros(Int, n, n, n)
+
+    @inbounds for i in 1:n, j in 1:n
+        # pointwise product of character values:
+        # this is the character of χ_i ⊗ χ_j
+        prodvals = C[:, i] .* C[:, j]
+
+        # expand  class function in the irreducible-character basis
+        coeffs = Cinv * prodvals
+
+        for k in 1:n
+            x = coeffs[k]
+
+            # allow tiny numerical/symbolic noise  round if close enough
+            if x isa Integer
+                xr = Int(x)
+            else
+                xr = round(Int, real(x))
+                isapprox(x, xr; atol=1e-8, rtol=1e-8) || error(
+                    "group_rep_fusion_ring_from_characters: non-integral structure constant at ($i,$j,$k): $x"
+                )
+            end
+
+            xr >= 0 || error(
+                "group_rep_fusion_ring_from_characters: negative structure constant at ($i,$j,$k): $xr"
+            )
+
+            mt[i, j, k] = xr
+        end
+    end
+
+    # default labels/names if none provided
+    default_labels = isempty(labels) ? ["χ_$i" for i in 1:n] : labels
+    default_names  = isempty(names)  ? String[] : names
+
+    return fusion_ring(mt; names=default_names, labels=default_labels)
+end
+
+# TODO: overload for actual group objects
+#  needs extracting  irreducible character table of `grp`
+# in  convention  above -> calling
+# group_rep_fusion_ring_from_characters(C; ...)
+function group_rep_fusion_ring(grp)
+    throw(ErrorException(
+        "group_rep_fusion_ring(grp) not yet implemented — need a way to extract the irreducible character table"
+    ))
+end
+
+
 # TODO: implement 
 hi_fusion_ring(grp)        = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
 
