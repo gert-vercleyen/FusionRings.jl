@@ -1035,6 +1035,11 @@ end
 
 
 #Added: from izumi
+#TODO: this is a bit redundant with _is_group_table, but we need the inverse vector for HI_fusion_ring anyway, so might as well compute it here.
+#TODO: could also check that inv[inv[a]] == a, and that tab[a, inv[a]] == 1, to be extra sure.
+#TODO: could also check that the group is abelian, since HI_fusion_ring requires a symmetric table.
+#TODO: For dr. vercleyen: are we referring to TY categories in the standard sense, which are built from a finite abelian group plus extra data?
+#TODO:  If so, should we  want to enforce commutativity of the table `tab` in `_is_group_table` or in `TY_fusion_ring`?
 export TY_fusion_ring
 """
     FusionRingTY(tab; names=String[]) -> FusionRing
