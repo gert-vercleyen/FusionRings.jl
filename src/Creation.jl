@@ -97,32 +97,7 @@ function fusion_ring_from_group(grp)
     throw(ErrorException("fusion_ring_from_group(grp) not yet implemented — require group algebra / character data"))
 end
 
-# TODO: add missing information
-# TODO: this doesn't look correct. It should work for any group,
-# not just cyclic ones
-# Tambara–Yamagami rings
-function ty_fusion_ring(G::AbstractVector)::FusionRing
-    n = length(G)
-    rank = n + 1
-    mt = fill(0, rank, rank, rank)
-    # group object fusion
-    for i in 1:n, j in 1:n
-        k = mod(i + j - 2, n) + 1
-        mt[i, j, k] = 1
-    end
-    m = rank
-    for i in 1:n
-        mt[i, m, m] = 1; mt[m, i, m] = 1
-    end
-    for i in 1:n
-        mt[m, m, i] = 1
-    end
-    fusion_ring(
-        mt,
-        names = ["TY(" * join(G, ",") * ")"],
-        labels = vcat(string.(G), ["m"])
-    )
-end
+
 
 # TODO: implement 
 group_rep_fusion_ring(grp) = throw(ErrorException("group_rep_fusion_ring needs character tables (TODO)"))
