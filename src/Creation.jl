@@ -184,6 +184,64 @@ function group_rep_fusion_ring(grp)
     ))
 end
 
+# finite group object -> multiplication table on {1,...,n}
+#
+# Assumptions:
+# - grp is  finite OSCAR/GAP group
+# - one(grp) returns the identity
+# - collect(gset(grp, *, [one(grp)])) enumerates all elements of grp
+#
+#  returned table tab satisfies:
+#   tab[i,j] = k  iff  els[i] * els[j] = els[k]
+# and identity is moved to index 1.
+#TODO: I am sure this exists already in our code somewhere so I will retake a look - this is temporary implementation to get things working for now, but it is not very efficient and does not do any error handling.
+function _group_table(grp)
+    #  want a finite group here.
+    is_finite(grp) || throw(ArgumentError("_group_table: group must be finite"))
+
+    # Enumerate  orbit of the identity under multiplication.
+    # For  finite group this should be the whole group.
+    els = collect(gset(grp, *, [one(grp)]))
+    isempty(els) && throw(ErrorException("_group_table: failed to enumerate group elements"))
+
+    n = length(els)
+
+    # Put the identity first, bc the rest of the package expects
+    # table identity = 1.
+    epos = findfirst(x -> isone(x), els)
+    epos === nothing && throw(ErrorException("_group_table: identity not found among enumerated elements"))
+
+    if epos != 1
+        els = vcat(els[epos], els[1:epos-1], els[epos+1:end])
+    end
+
+    # Build index map element -> {1,...,n}.
+    idx = Dict{typeof(els[1]), Int}()
+    for i in 1:n
+        haskey(idx, els[i]) && throw(ErrorException("_group_table: duplicate element encountered during enumeration"))
+        idx[els[i]] = i
+    end
+
+    # Build Cayley table.
+    tab = zeros(Int, n, n)
+    @inbounds for i in 1:n, j in 1:n
+        prod = els[i] * els[j]
+        haskey(idx, prod) || throw(ErrorException("_group_table: enumeration is not closed under multiplication"))
+        tab[i, j] = idx[prod]
+    end
+
+    return tab, els
+end
+
+# group object -> pointed fusion ring
+#
+# This is  same construction as fusion_ring_from_group(gmt),
+# but now we first extract the Cayley table from the group object.
+function fusion_ring_from_group(grp)::FusionRing
+    tab, _ = _group_table(grp)
+    return fusion_ring_from_group(tab)
+end
+
 
 # TODO: implement 
 hi_fusion_ring(grp)        = throw(ErrorException("hi_fusion_ring (Haagerup–Izumi) pending implementation"))
